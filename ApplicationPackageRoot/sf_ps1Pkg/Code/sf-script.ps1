@@ -23,11 +23,11 @@ while ($true) {
     write-host $msg
     
     $level = 'Ok'
-    if($netStatFG.count > 900)
+    if($netStatFG.count -gt 800)
     {
-        $level = 'Ok'
+        $level = 'Warning'
     }
-    elseif($netStatFG.Count -eq 1000)
+    elseif($netStatFG.Count -ge 1000)
     {
         $level = 'Error'
     }
