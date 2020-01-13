@@ -21,7 +21,7 @@ while ($true) {
     $msg = "$(get-date) all:`r`n$($netStatObj | ConvertTo-Json)`r`n"
     $netStatFG = $netStatRaw | where-object OwningProcess -eq (get-process $processName).id
     $netSTatFGGrouped = $netStatFG | group state
-    $msg += "$(get-date) $processName:`r`n$($netStatFGGrouped | out-string)`r`n"
+    $msg += "$(get-date) $processName :`r`n$($netStatFGGrouped | out-string)`r`n"
     write-host $msg
     
     $level = 'Ok'
