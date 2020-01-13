@@ -3,7 +3,8 @@
 ###########################
 param(
     $sleepMinutes = 1,
-    $nodeName = $env:Fabric_NodeName
+    $nodeName = $env:Fabric_NodeName,
+    $processName = "fabricgateway"
 )
 
 while ($true) {
@@ -17,9 +18,9 @@ while ($true) {
     $netStatObj = $netStat.GetEnumerator() | sort name | % -Begin { [PSObject]$o = @{ } } { $o | Add-Member -NotePropertyName $_.Name -NotePropertyValue $_.Value } -End { $o }
 
     $msg = "$(get-date) all:`r`n$($netStatObj | ConvertTo-Json)`r`n"
-    $netStatFG = $netStatRaw | where-object OwningProcess -eq (get-process fabricgateway).id
+    $netStatFG = $netStatRaw | where-object OwningProcess -eq (get-process $processName).id
     $netSTatFGGrouped = $netStatFG | group state
-    $msg += "$(get-date) fabricgateway:`r`n$($netStatFGGrouped | out-string)`r`n"
+    $msg += "$(get-date) $processName:`r`n$($netStatFGGrouped | out-string)`r`n"
     write-host $msg
     
     $level = 'Ok'
