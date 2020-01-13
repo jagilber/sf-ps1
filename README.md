@@ -9,3 +9,9 @@ script will warn on more than 900 fabricgateway connections
 script will error on 1000 or more fabricgateway connections  
 
 ![](media/sfx.1.png)
+
+![](media/sfx.2.png)
+
+![](media/sfx.3.png)
+
+![](media/sfx.4.png)

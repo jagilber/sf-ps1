@@ -20,20 +20,23 @@ while ($true) {
     $netStatSelected | sort State, LocalPort | select -Unique State, LocalPort | group State | % { $netStat["$($_.Name)_Ports"] = $_.Count }
     $netStatObj = $netStat.GetEnumerator() | sort name | % -Begin { [PSObject]$o = @{ } } { $o | Add-Member -NotePropertyName $_.Name -NotePropertyValue $_.Value } -End { $o }
 
-    $msg = "$(get-date) all: $($netstatRaw.Count)`r`n$($netStatObj | ConvertTo-Json)`r`n"
+    $msg = "all: $($netstatRaw.Count)`r`n$($netStatObj | ConvertTo-Json)`r`n"
     $netStatProcess = $netStatRaw | where-object OwningProcess -eq (get-process $processName).id
     $netStatProcessGrouped = $netStatProcess | group state
-    $msg += "$(get-date) $($processName): $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
-    $msg += "timer: $(((get-date) - $timer).tostring())"
-    write-host $msg
+    $msg += "$($processName): $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
     
     $level = 'Ok'
-    if ($netStatProcess.count -gt ($maxConnectionCount * .8)) {
-        $level = 'Warning'
-    }
-    elseif ($netStatProcess.Count -ge $maxConnectionCount) {
+    if ($netStatProcess.Count -ge $maxConnectionCount) {
         $level = 'Error'
+        $msg += "ERROR: $processName count over max connection count $maxConnectionCount"
     }
+    elseif ($netStatProcess.count -gt ($maxConnectionCount * .8)) {
+        $level = 'Warning'
+        $msg += "WARNING: $processName connection count near max connection count $maxConnectionCount"
+    }
+
+    $msg += "`r`n$(get-date) timer: $(((get-date) - $timer).tostring())"
+    write-host $msg
 
     $error.clear()
     write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty 'NetStat' -Description $msg"
