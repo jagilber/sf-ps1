@@ -8,10 +8,7 @@ param(
 
 while ($true) {
     $netStat = @{ }
-    if(!Test-ServiceFabricClusterConnection)
-    {
-        Connect-ServiceFabricCluster
-    }
+    Connect-ServiceFabricCluster
 
 	$netStatRaw = Get-NetTCPConnection 
     $netStatSelected = $netStatRaw | select LocalPort, State
