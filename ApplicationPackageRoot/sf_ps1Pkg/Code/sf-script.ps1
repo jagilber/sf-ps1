@@ -4,7 +4,8 @@
 param(
     $sleepMinutes = 1,
     $nodeName = $env:Fabric_NodeName,
-    $processName = "fabricgateway"
+    $processName = "fabricgateway",
+    $maxConnectionCount = 1000
 )
 
 while ($true) {
@@ -24,10 +25,10 @@ while ($true) {
     write-host $msg
     
     $level = 'Ok'
-    if ($netStatFG.count -gt 800) {
+    if ($netStatFG.count -gt ($maxConnectionCount * .8)) {
         $level = 'Warning'
     }
-    elseif ($netStatFG.Count -ge 1000) {
+    elseif ($netStatFG.Count -ge $maxConnectionCount) {
         $level = 'Error'
     }
 
