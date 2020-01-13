@@ -8,7 +8,7 @@ param(
 
 while ($true) {
     $netStat = @{ }
-    if(!get-serviceFabricCluster)
+    if(!Test-ServiceFabricClusterConnection)
     {
         Connect-ServiceFabricCluster
     }
