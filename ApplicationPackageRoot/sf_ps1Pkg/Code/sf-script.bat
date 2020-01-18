@@ -1,8 +1,9 @@
-﻿%cd%
+﻿@echo on
+echo %cd%
 set
-%1
-%scripts%
-%codeVersion%
+echo %1
+echo %scripts%
+echo %codeVersion%
 rem set codeVersion=1.0.0
 whoami
 cd ..\%Fabric_ServicePackageName%.%Fabric_CodePackageName%.%codeVersion%

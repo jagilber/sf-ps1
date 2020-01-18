@@ -37,7 +37,7 @@ while ($true) {
         $msg += "WARNING: $processName connection count near max connection count $maxConnectionCount`r`n"
     }
 
-    $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())`r`n"
+    $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())"
     write-output $msg
 
     write-host "Sleeping for $sleepMinutes minutes`r`n"

@@ -13,7 +13,7 @@
         -->
     <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-netstat.ps1 -sleepMinutes 2,https://raw.githubusercontent.com/jagilber/sf-ps1/master/ApplicationPackageRoot/sf_ps1Pkg/Code/sf-netstat.ps1 -sleepMinutes 4" />
     <Parameter Name="sf_ps1_codeVersion" DefaultValue="1.0.0" />
-    <Parameter Name="sf_ps1_verbose" DefaultValue="true" />
+    <Parameter Name="sf_ps1_detail" DefaultValue="true" />
     <!--<Parameter Name="sf_ps1_scripts" DefaultValue="" />-->
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion
@@ -33,7 +33,7 @@
     <EnvironmentOverrides CodePackageRef="Code">
       <EnvironmentVariable Name="scripts" Value="[sf_ps1_scripts]" />
       <EnvironmentVariable Name="codeVersion" Value="[sf_ps1_codeVersion]" />
-      <EnvironmentVariable Name="verbose" Value="[sf_ps1_verbose]" />
+      <EnvironmentVariable Name="detail" Value="[sf_ps1_detail]" />
     </EnvironmentOverrides>
   </ServiceManifestImport>
   <DefaultServices>

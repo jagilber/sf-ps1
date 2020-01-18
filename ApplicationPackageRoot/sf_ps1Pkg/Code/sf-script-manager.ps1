@@ -1,11 +1,11 @@
 #
 [cmdletbinding()]
 param(
-    [string[]]$scripts = @()
+    [string[]]$scripts = @(),
     [int]$sleepMinutes = 1,
     [string]$nodeName = $env:Fabric_NodeName,
     [string]$source = $env:Fabric_ServiceName,
-    [bool]$verbose = $env:verbose
+    [string]$detail = $env:detail
 )
 
 
@@ -33,12 +33,14 @@ function main() {
 
 function monitor-jobs() {
     write-log "monitoring jobs"
+
     while (get-job) {
         foreach ($job in get-job) {
             write-verbose ($job | fl * | out-string)
 
             if ($job.state -ine "running") {
-                write-log ($job | fl * | out-string)
+                write-log ($job | fl * | out-string) -report $true
+
                 if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
                     [void]$global:joboutputs.add(($global:jobs[$job.id]), ($job | ConvertTo-Json))
                     $global:fail++
@@ -47,7 +49,8 @@ function monitor-jobs() {
                     [void]$global:joboutputs.add(($global:jobs[$job.id]), ($job.output | ConvertTo-Json))
                     $global:success++
                 }
-                write-log ($job.output | ConvertTo-Json)
+
+                write-log ($job.output | ConvertTo-Json) -report $true
                 $job.output
                 Remove-Job -Id $job.Id -Force  
             }
@@ -55,10 +58,11 @@ function monitor-jobs() {
                 $jobInfo = Receive-Job -Job $job
                 
                 if ($jobInfo) {
-                    write-log ($jobInfo | fl * | out-string)
+                    write-log ($jobInfo | fl * | out-string) -report $true
                 }
             }
-            Start-Sleep -Seconds 1
+
+            start-sleep -Seconds 1
         }
     }
 }
@@ -113,9 +117,9 @@ function start-jobs() {
     }
 }
 
-function write-log($data, $level) {
-    $data = "$(get-date):$data`r`n"
-    $sendReport = $verbose
+function write-log($data, $report = $false) {
+    $data = "$(get-date):$data"
+    $sendReport = ($detail -imatch "true") -and $report
     $level = "OK"
 
     if($level -imatch "error") {
@@ -129,18 +133,19 @@ function write-log($data, $level) {
         $sendReport = $true
     }
 
-    write-host $data
-
     if($sendReport){
         $error.clear()
-        write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $psscriptname -Description $data`r`n"
-        $result = Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $psscriptname -Description $data
+        write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $($MyInvocation.MyCommand.Name) -Description `"$data`r`n`""
+        $result = Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty ($MyInvocation.MyCommand.Name) -Description "$data"
        
         if ($error -or $result) { 
             write-host ($result | out-string)
+            write-host ($error | out-string)
             $error.Clear()
         }
     }
+
+    write-host "$data`r`n"
 }
 
 # execute script

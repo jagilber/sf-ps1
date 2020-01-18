@@ -35,8 +35,7 @@
     <EnvironmentVariables>
       <EnvironmentVariable Name="scripts" Value="[scripts]" />
       <EnvironmentVariable Name="codeVersion" Value="[codeVersion]" />
-      <EnvironmentVariable Name="scripts" Value="[scripts]" />
-      <EnvironmentVariable Name="verbose" Value="false" />
+      <EnvironmentVariable Name="detail" Value="false" />
     </EnvironmentVariables>
   </CodePackage>
 
