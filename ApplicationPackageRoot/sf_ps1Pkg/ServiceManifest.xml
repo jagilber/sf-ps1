@@ -25,13 +25,16 @@
     <EntryPoint>
       <ExeHost>
         <Program>sf-script.bat</Program>
-        <Arguments></Arguments>
+        <Arguments>&lt; nul</Arguments>
         <WorkingFolder>Work</WorkingFolder>
         <!-- Uncomment to log console output (both stdout and stderr) to one of the
              service's working directories. -->
         <ConsoleRedirection FileRetentionCount="5" FileMaxSizeInKb="2048" />
       </ExeHost>
     </EntryPoint>
+    <EnvironmentVariables>
+      <EnvironmentVariable Name="scripts" Value="[scripts]" />
+    </EnvironmentVariables>
   </CodePackage>
 
   <!-- Config package is the contents of the Config directoy under PackageRoot that contains an

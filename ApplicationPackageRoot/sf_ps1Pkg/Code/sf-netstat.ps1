@@ -9,6 +9,8 @@ param(
     $source = $env:Fabric_ServiceName
 )
 
+$ErrorActionPreference = "silentlycontinue"
+
 while ($true) {
     $netStat = @{ }
     $timer = get-date
