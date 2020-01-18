@@ -11,7 +11,7 @@ $errorActionPreference = "continue"
 $global:joboutputs = @{ }
 $global:fail = 0
 $global:success = 0
-$scripts = @($scripts.Split(','))
+$scripts = @($scripts.Split(';'))
 $nodeName = $env:Fabric_NodeName
 $source = $env:Fabric_ServiceName
 $error.Clear()
@@ -45,10 +45,11 @@ function monitor-jobs() {
             write-verbose ($job | fl * | out-string)
 
             if ($job.state -ine "running") {
-                write-log -data ($job | fl * | out-string) -report $true
+                write-log -data ($job | fl * | out-string) -report $job.name
 
                 if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
                     [void]$global:joboutputs.add(($global:jobs[$job.id]), ($job | ConvertTo-Json))
+                    write-log -data "ERROR:$($job | fl * | out-string)" -report $job.name
                     $global:fail++
                 }
                 else {
@@ -56,13 +57,13 @@ function monitor-jobs() {
                     $global:success++
                 }
 
-                write-log -data ($job.output | ConvertTo-Json) -report $true
+                write-log -data ($job.output | ConvertTo-Json) -report $job.name
                 remove-job -Id $job.Id -Force  
             }
             else {
                 $jobInfo = (receive-job -Id $job.id)
                 if($jobInfo){
-                    write-log -data $jobInfo -report $true
+                    write-log -data $jobInfo -report $job.name
                 }
             }
             start-sleep -Seconds 1
@@ -112,7 +113,7 @@ function start-jobs() {
         $scriptFile = resolve-path $scriptFile
 
         write-log "starting $scriptFile $scriptArgs"
-        start-job -Name $scriptFile -ArgumentList @($scriptFile, $scriptArgs) -scriptblock { 
+        start-job -Name $scriptFileName -ArgumentList @($scriptFile, $scriptArgs) -scriptblock { 
             param($scriptFile, $scriptArgs)
             write-host "$scriptFile $scriptArgs"
             invoke-expression -command "$scriptFile $scriptArgs"
@@ -132,18 +133,18 @@ function set-nodeName($nodeName){
     return $nodeName
 }
 
-function write-log($data, $report = $false) {
+function write-log($data, $report) {
     if(!$data) { return }
     $data = "$(get-date):$data"
     $sendReport = ($detail -imatch "true") -and $report
     $level = "Ok"
 
-    if ($level -imatch "error") {
+    if ($data -imatch "error") {
         write-error $data
         $level = "Error"
         $sendReport = $true
     }
-    elseif ($level -imatch "warning") {
+    elseif ($data -imatch "warning") {
         write-warning $data
         $level = "Warning"
         $sendReport = $true
@@ -155,8 +156,9 @@ function write-log($data, $report = $false) {
         try {
             if (!(get-serviceFabricClusterConnection)) { connect-servicefabriccluster }
             $error.clear()
-            write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $($MyInvocation.MyCommand.Name) -Description `"$data`r`n`""
-            Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty ($MyInvocation.MyCommand.Name) -Description "$data"
+            if(!$report) { $report = $MyInvocation.ScriptName }
+            write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $report -Description `"$data`r`n`""
+            Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $report -Description "$data"
         }
         catch {
             write-host "error sending report: $(($error | out-string))"

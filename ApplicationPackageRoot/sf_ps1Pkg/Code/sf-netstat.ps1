@@ -3,10 +3,8 @@
 ###########################
 param(
     $sleepMinutes = 1,
-    $nodeName = $env:Fabric_NodeName,
     $processName = "fabricgateway",
-    $maxConnectionCount = 1000,
-    $source = $env:Fabric_ServiceName
+    $maxConnectionCount = 1000
 )
 
 $ErrorActionPreference = "continue"
