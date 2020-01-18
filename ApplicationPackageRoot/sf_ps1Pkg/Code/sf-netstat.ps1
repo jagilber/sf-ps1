@@ -9,12 +9,11 @@ param(
     $source = $env:Fabric_ServiceName
 )
 
-$ErrorActionPreference = "silentlycontinue"
+$ErrorActionPreference = "continue"
 
 while ($true) {
     $netStat = @{ }
     $timer = get-date
-    Connect-ServiceFabricCluster
 
     $netStatRaw = Get-NetTCPConnection 
     $netStatSelected = $netStatRaw | select LocalPort, State
@@ -27,19 +26,16 @@ while ($true) {
     $netStatProcessGrouped = $netStatProcess | group state
     $msg += "$($processName): $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
     
-    $level = 'Ok'
     if ($netStatProcess.Count -ge $maxConnectionCount) {
-        $level = 'Error'
         $msg += "ERROR: $processName count over max connection count $maxConnectionCount`r`n"
     }
     elseif ($netStatProcess.count -gt ($maxConnectionCount * .8)) {
-        $level = 'Warning'
         $msg += "WARNING: $processName connection count near max connection count $maxConnectionCount`r`n"
     }
 
+    $msg += "sleeping for $sleepMinutes minutes`r`n"
     $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())"
     write-output $msg
-
-    write-host "Sleeping for $sleepMinutes minutes`r`n"
+    
     start-sleep -Seconds ($sleepMinutes * 60)
 }

@@ -3,26 +3,32 @@
 param(
     [string[]]$scripts = @(),
     [int]$sleepMinutes = 1,
-    [string]$nodeName = $env:Fabric_NodeName,
-    [string]$source = $env:Fabric_ServiceName,
     [string]$detail = $env:detail
 )
 
 
-$errorActionPreference = "silentlycontinue"
-$global:joboutputs = @{}
+$errorActionPreference = "continue"
+$global:joboutputs = @{ }
 $global:fail = 0
 $global:success = 0
 $scripts = @($scripts.Split(','))
+$nodeName = $env:Fabric_NodeName
+$source = $env:Fabric_ServiceName
+$error.Clear()
 
 function main() {
     try {
         write-log "starting"
+        $nodeName = set-nodeName -nodeName $nodeName
+        if(!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
+
+        connect-serviceFabricCluster
         remove-jobs
         start-jobs
         monitor-jobs
     }
     catch {
+        write-log "error:($error | out-string)"
         write-error ($error | out-string)
     }
     finally {
@@ -39,7 +45,7 @@ function monitor-jobs() {
             write-verbose ($job | fl * | out-string)
 
             if ($job.state -ine "running") {
-                write-log ($job | fl * | out-string) -report $true
+                write-log -data ($job | fl * | out-string) -report $true
 
                 if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
                     [void]$global:joboutputs.add(($global:jobs[$job.id]), ($job | ConvertTo-Json))
@@ -50,18 +56,15 @@ function monitor-jobs() {
                     $global:success++
                 }
 
-                write-log ($job.output | ConvertTo-Json) -report $true
-                $job.output
-                Remove-Job -Id $job.Id -Force  
+                write-log -data ($job.output | ConvertTo-Json) -report $true
+                remove-job -Id $job.Id -Force  
             }
             else {
-                $jobInfo = Receive-Job -Job $job
-                
-                if ($jobInfo) {
-                    write-log ($jobInfo | fl * | out-string) -report $true
+                $jobInfo = (receive-job -Id $job.id)
+                if($jobInfo){
+                    write-log -data $jobInfo -report $true
                 }
             }
-
             start-sleep -Seconds 1
         }
     }
@@ -89,11 +92,11 @@ function start-jobs() {
     foreach ($script in $scripts) {
         $argIndex = $script.LastIndexOf('.ps1') + 4
         $scriptFile = $script.substring(0, $argIndex)
-        $scriptArgs = $script.substring($argIndex + 1)
+        $scriptArgs = $script.substring($argIndex).trim()
         $scriptFileName = [io.path]::GetFileName($scriptFile)
         write-log "checking file:$scriptFile`r`n`targs:$scriptArgs"
 
-        if($scriptFile.tolower().startswith("http")) {
+        if ($scriptFile.tolower().startswith("http")) {
             [net.servicePointManager]::Expect100Continue = $true;
             [net.servicePointManager]::SecurityProtocol = [net.securityProtocolType]::Tls12;
             write-log "downloading $scriptFile"
@@ -101,7 +104,7 @@ function start-jobs() {
             (new-object net.webclient).DownloadFile($scriptFile, $downloadedFile)
             $scriptFile = $downloadedFile
         }
-        elseif(!(test-path $scriptFile)) {
+        elseif (!(test-path $scriptFile)) {
             write-log "error:$scriptFile does not exist"
             continue
         }
@@ -110,42 +113,57 @@ function start-jobs() {
 
         write-log "starting $scriptFile $scriptArgs"
         start-job -Name $scriptFile -ArgumentList @($scriptFile, $scriptArgs) -scriptblock { 
-            param($scriptFile,$scriptArgs)
-            write-output "$scriptFile $scriptArgs"
-            write-output (invoke-expression -command "$scriptFile $scriptArgs")
+            param($scriptFile, $scriptArgs)
+            write-host "$scriptFile $scriptArgs"
+            invoke-expression -command "$scriptFile $scriptArgs"
         }
     }
 }
 
+function set-nodeName($nodeName){
+    if(!$nodeName) {
+        $index = $env:COMPUTERNAME.Substring($env:COMPUTERNAME.Length - 6).trimstart('0')
+        if(!$index) { $index = "0" }
+        $name = "_$($env:COMPUTERNAME.Substring(0, $env:COMPUTERNAME.Length - 6))_"
+        $nodeName = "$name$index"
+    }
+
+    write-log "using nodename $nodeName"
+    return $nodeName
+}
+
 function write-log($data, $report = $false) {
+    if(!$data) { return }
     $data = "$(get-date):$data"
     $sendReport = ($detail -imatch "true") -and $report
-    $level = "OK"
+    $level = "Ok"
 
-    if($level -imatch "error") {
+    if ($level -imatch "error") {
         write-error $data
         $level = "Error"
         $sendReport = $true
     }
-    elseif($level -imatch "warning") {
-        Write-Warning $data
+    elseif ($level -imatch "warning") {
+        write-warning $data
         $level = "Warning"
         $sendReport = $true
     }
 
-    if($sendReport){
-        $error.clear()
-        write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $($MyInvocation.MyCommand.Name) -Description `"$data`r`n`""
-        $result = Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty ($MyInvocation.MyCommand.Name) -Description "$data"
-       
-        if ($error -or $result) { 
-            write-host ($result | out-string)
-            write-host ($error | out-string)
+    write-host "$level : $sendReport : $report : $data`r`n"
+
+    if ($sendReport) {
+        try {
+            if (!(get-serviceFabricClusterConnection)) { connect-servicefabriccluster }
+            $error.clear()
+            write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $($MyInvocation.MyCommand.Name) -Description `"$data`r`n`""
+            Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty ($MyInvocation.MyCommand.Name) -Description "$data"
+        }
+        catch {
+            write-host "error sending report: $(($error | out-string))"
+            write-error ($error | out-string)
             $error.Clear()
         }
     }
-
-    write-host "$data`r`n"
 }
 
 # execute script
