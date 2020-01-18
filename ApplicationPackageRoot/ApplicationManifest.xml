@@ -6,8 +6,14 @@
                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Parameters>
     <Parameter Name="sf_ps1_InstanceCount" DefaultValue="-1" />
-    <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-netstat.ps1" />
+    <!--'sf_ps1_scripts' string containing path to script and arguments to run as exehost stateless service.
+        use commas ',' to separate script commands if using multiple scripts.
+        paths can be local or url.
+        example:.\test2.ps1 -runMinutes 2,.\test.ps1 -totalMinutes 1,https://raw.githubusercontent.com/jagilber/sf-ps1/master/ApplicationPackageRoot/sf_ps1Pkg/Code/sf-netstat.ps1 -sleepMinutes 4
+        -->
+    <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-netstat.ps1 -sleepMinutes 2,https://raw.githubusercontent.com/jagilber/sf-ps1/master/ApplicationPackageRoot/sf_ps1Pkg/Code/sf-netstat.ps1 -sleepMinutes 4" />
     <Parameter Name="sf_ps1_codeVersion" DefaultValue="1.0.0" />
+    <Parameter Name="sf_ps1_verbose" DefaultValue="true" />
     <!--<Parameter Name="sf_ps1_scripts" DefaultValue="" />-->
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion
@@ -27,6 +33,7 @@
     <EnvironmentOverrides CodePackageRef="Code">
       <EnvironmentVariable Name="scripts" Value="[sf_ps1_scripts]" />
       <EnvironmentVariable Name="codeVersion" Value="[sf_ps1_codeVersion]" />
+      <EnvironmentVariable Name="verbose" Value="[sf_ps1_verbose]" />
     </EnvironmentOverrides>
   </ServiceManifestImport>
   <DefaultServices>

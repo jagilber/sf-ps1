@@ -2,12 +2,18 @@
 [cmdletbinding()]
 param(
     [string[]]$scripts = @()
+    [int]$sleepMinutes = 1,
+    [string]$nodeName = $env:Fabric_NodeName,
+    [string]$source = $env:Fabric_ServiceName,
+    [bool]$verbose = $env:verbose
 )
+
 
 $errorActionPreference = "silentlycontinue"
 $global:joboutputs = @{}
 $global:fail = 0
 $global:success = 0
+$scripts = @($scripts.Split(','))
 
 function main() {
     try {
@@ -29,9 +35,9 @@ function monitor-jobs() {
     write-log "monitoring jobs"
     while (get-job) {
         foreach ($job in get-job) {
-            write-log ($job | fl * | out-string)
+            write-verbose ($job | fl * | out-string)
 
-            if ($job.state -ieq "completed") { # -ine "running") {
+            if ($job.state -ine "running") {
                 write-log ($job | fl * | out-string)
                 if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
                     [void]$global:joboutputs.add(($global:jobs[$job.id]), ($job | ConvertTo-Json))
@@ -75,15 +81,17 @@ function remove-jobs() {
 }
 
 function start-jobs() {
-    write-log "start jobs"
-    foreach ($script in @($scripts)) {
+    write-log "start jobs scripts count: $($scripts.Count)"
+    foreach ($script in $scripts) {
         $argIndex = $script.LastIndexOf('.ps1') + 4
         $scriptFile = $script.substring(0, $argIndex)
-        $scriptArgs = $script.substring($argIndex)
+        $scriptArgs = $script.substring($argIndex + 1)
         $scriptFileName = [io.path]::GetFileName($scriptFile)
-        write-log "checking file:$scriptFileName`r`n`targs:$scriptArgs"
+        write-log "checking file:$scriptFile`r`n`targs:$scriptArgs"
 
         if($scriptFile.tolower().startswith("http")) {
+            [net.servicePointManager]::Expect100Continue = $true;
+            [net.servicePointManager]::SecurityProtocol = [net.securityProtocolType]::Tls12;
             write-log "downloading $scriptFile"
             $downloadedFile = "$env:temp\$scriptFileName"
             (new-object net.webclient).DownloadFile($scriptFile, $downloadedFile)
@@ -98,24 +106,41 @@ function start-jobs() {
 
         write-log "starting $scriptFile $scriptArgs"
         start-job -Name $scriptFile -ArgumentList @($scriptFile, $scriptArgs) -scriptblock { 
-            param($script,$args)
-            write-log "$script $args"
-            write-log (invoke-expression -command "$script $args")
+            param($scriptFile,$scriptArgs)
+            write-output "$scriptFile $scriptArgs"
+            write-output (invoke-expression -command "$scriptFile $scriptArgs")
         }
     }
 }
 
 function write-log($data, $level) {
     $data = "$(get-date):$data`r`n"
+    $sendReport = $verbose
+    $level = "OK"
 
     if($level -imatch "error") {
         write-error $data
+        $level = "Error"
+        $sendReport = $true
     }
     elseif($level -imatch "warning") {
         Write-Warning $data
+        $level = "Warning"
+        $sendReport = $true
     }
 
     write-host $data
+
+    if($sendReport){
+        $error.clear()
+        write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $psscriptname -Description $data`r`n"
+        $result = Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $psscriptname -Description $data
+       
+        if ($error -or $result) { 
+            write-host ($result | out-string)
+            $error.Clear()
+        }
+    }
 }
 
 # execute script

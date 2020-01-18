@@ -30,27 +30,16 @@ while ($true) {
     $level = 'Ok'
     if ($netStatProcess.Count -ge $maxConnectionCount) {
         $level = 'Error'
-        $msg += "ERROR: $processName count over max connection count $maxConnectionCount"
+        $msg += "ERROR: $processName count over max connection count $maxConnectionCount`r`n"
     }
     elseif ($netStatProcess.count -gt ($maxConnectionCount * .8)) {
         $level = 'Warning'
-        $msg += "WARNING: $processName connection count near max connection count $maxConnectionCount"
+        $msg += "WARNING: $processName connection count near max connection count $maxConnectionCount`r`n"
     }
 
-    $msg += "`r`n$(get-date) timer: $(((get-date) - $timer).tostring())"
-    write-host $msg
+    $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())`r`n"
+    write-output $msg
 
-    $error.clear()
-    write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty 'NetStat' -Description $msg"
-    $result = Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty 'NetStat' -Description $msg
-
-    if ($error -or $result) { 
-        Write-host ($result | out-string)
-        Write-host ($error | out-string)
-        Write-Error ($error | out-string)
-        $error.Clear()
-    }
-
-    Write-Host "Sleeping for $sleepMinutes minutes"
-    Start-Sleep -Seconds ($sleepMinutes * 60)
+    write-host "Sleeping for $sleepMinutes minutes`r`n"
+    start-sleep -Seconds ($sleepMinutes * 60)
 }
