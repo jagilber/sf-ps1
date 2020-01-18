@@ -34,6 +34,7 @@
     </EntryPoint>
     <EnvironmentVariables>
       <EnvironmentVariable Name="scripts" Value="[scripts]" />
+      <EnvironmentVariable Name="codeVersion" Value="[codeVersion]" />
     </EnvironmentVariables>
   </CodePackage>
 

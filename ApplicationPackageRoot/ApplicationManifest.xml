@@ -7,6 +7,7 @@
   <Parameters>
     <Parameter Name="sf_ps1_InstanceCount" DefaultValue="-1" />
     <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-netstat.ps1" />
+    <Parameter Name="sf_ps1_codeVersion" DefaultValue="1.0.0" />
     <!--<Parameter Name="sf_ps1_scripts" DefaultValue="" />-->
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion
@@ -25,6 +26,7 @@
     </ConfigOverrides>
     <EnvironmentOverrides CodePackageRef="Code">
       <EnvironmentVariable Name="scripts" Value="[sf_ps1_scripts]" />
+      <EnvironmentVariable Name="codeVersion" Value="[sf_ps1_codeVersion]" />
     </EnvironmentOverrides>
   </ServiceManifestImport>
   <DefaultServices>
