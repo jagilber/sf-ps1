@@ -41,10 +41,10 @@ while ($true) {
     $msg += "`r`ntotal network ports in use: $($netstatRaw.Count)`r`n$($netStat | convertto-json )`r`n"
     $msg += "$($processName) ports in use: $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
     
-    if ($netStatRaw.Count -ge $ephemPortCount) {
+    if ($ephemPortsInUse -ge $ephemPortCount) {
         $msg += "ERROR: ephemeral port count >= max ephemeral connection count $ephemPortCount`r`n"
     }
-    elseif ($netStatRaw.Count -gt ($ephemPortCount * .8)) {
+    elseif ($ephemPortsInUse -gt ($ephemPortCount * .8)) {
         $msg += "WARNING: ephemeral port count near max ephemeral connection count $ephemPortCount`r`n"
     }
 
