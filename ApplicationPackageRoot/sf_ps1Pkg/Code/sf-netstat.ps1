@@ -14,7 +14,7 @@ $match = [regex]::Match($result, `
     [text.RegularExpressions.RegexOptions]::Singleline -bor [text.RegularExpressions.RegexOptions]::IgnoreCase)
 $ephemStartPort = [convert]::ToInt32($match.Groups["startPort"].Value)
 $ephemPortCount = [convert]::ToInt32($match.Groups["numberOfPorts"].Value)
-$ephemEndPort = $ephemStartPort + $ephemPortCount
+$ephemEndPort = $ephemStartPort + $ephemPortCount - 1
 
 while ($true) {
     $timer = get-date
@@ -35,8 +35,10 @@ while ($true) {
     $netStatProcess = $netStatRaw | where-object OwningProcess -eq (get-process $processName).id
     $netStatProcessGrouped = $netStatProcess | group-object state
 
-    $msg = "`r`nephemeral ports available: $($ephemPortCount - $ephemPortsInUse)`r`n"
-    $msg += "total network ports in use: $($netstatRaw.Count)`r`n$($netStat | convertto-json )`r`n"
+    $msg = "`r`ntcp ephemeral port range: $ephemStartPort - $ephemEndPort`r`n"
+    $msg += "tcp ephemeral ports available: $($ephemPortCount - $ephemPortsInUse)`r`n"
+    $msg += "tcp ephemeral ports in use: $ephemPortsInUse`r`n"
+    $msg += "`r`ntotal network ports in use: $($netstatRaw.Count)`r`n$($netStat | convertto-json )`r`n"
     $msg += "$($processName) ports in use: $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
     
     if ($netStatRaw.Count -ge $ephemPortCount) {
