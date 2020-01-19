@@ -36,7 +36,7 @@ while ($true) {
     $netStatProcessGrouped = $netStatProcess | group-object state
 
     $msg = "`r`nephemeral ports available: $($ephemPortCount - $ephemPortsInUse)`r`n"
-    $msg += "all ports in use: $($netstatRaw.Count)`r`n$($netStat | convertto-json )`r`n"
+    $msg += "total network ports in use: $($netstatRaw.Count)`r`n$($netStat | convertto-json )`r`n"
     $msg += "$($processName) ports in use: $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
     
     if ($netStatRaw.Count -ge $ephemPortCount) {
