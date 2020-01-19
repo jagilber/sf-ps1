@@ -1,26 +1,23 @@
 #
 [cmdletbinding()]
 param(
-    [string[]]$scripts = @(),
+    [string]$scripts = "",
     [int]$sleepMinutes = 1,
-    [string]$detail = $env:detail
+    [string]$detail = $env:detail,
+    [int]$timeToLiveMinutes = 60
 )
 
-
+$error.Clear()
 $errorActionPreference = "continue"
-$global:joboutputs = @{ }
-$global:fail = 0
-$global:success = 0
 $scripts = @($scripts.Split(';'))
 $nodeName = $env:Fabric_NodeName
 $source = $env:Fabric_ServiceName
-$error.Clear()
 
 function main() {
     try {
         write-log "starting"
         $nodeName = set-nodeName -nodeName $nodeName
-        if(!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
+        if (!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
 
         connect-serviceFabricCluster
         remove-jobs
@@ -42,19 +39,13 @@ function monitor-jobs() {
 
     while (get-job) {
         foreach ($job in get-job) {
-            write-verbose ($job | fl * | out-string)
+            write-verbose ($job | format-list * | out-string)
 
             if ($job.state -ine "running") {
-                write-log -data ($job | fl * | out-string) -report $job.name
+                write-log -data ($job | format-list * | out-string) -report $job.name
 
                 if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
-                    [void]$global:joboutputs.add(($global:jobs[$job.id]), ($job | ConvertTo-Json))
-                    write-log -data "ERROR:$($job | fl * | out-string)" -report $job.name
-                    $global:fail++
-                }
-                else {
-                    [void]$global:joboutputs.add(($global:jobs[$job.id]), ($job.output | ConvertTo-Json))
-                    $global:success++
+                    write-log -data "ERROR:$($job | format-list * | out-string)" -report $job.name
                 }
 
                 write-log -data ($job.output | ConvertTo-Json) -report $job.name
@@ -62,7 +53,7 @@ function monitor-jobs() {
             }
             else {
                 $jobInfo = (receive-job -Id $job.id)
-                if($jobInfo){
+                if ($jobInfo) {
                     write-log -data $jobInfo -report $job.name
                 }
             }
@@ -74,12 +65,10 @@ function monitor-jobs() {
 function remove-jobs() {
     write-log "removing jobs"
     try {
-        if (@(get-job).Count -gt 0) {
-            foreach ($job in get-job) {
-                write-log "removing job $($job.Name)"
-                $job.StopJob()
-                Remove-Job $job -Force
-            }
+        foreach ($job in get-job) {
+            write-log "removing job $($job.Name)"
+            $job.StopJob()
+            Remove-Job $job -Force
         }
     }
     catch {
@@ -121,10 +110,10 @@ function start-jobs() {
     }
 }
 
-function set-nodeName($nodeName){
-    if(!$nodeName) {
+function set-nodeName($nodeName) {
+    if (!$nodeName) {
         $index = $env:COMPUTERNAME.Substring($env:COMPUTERNAME.Length - 6).trimstart('0')
-        if(!$index) { $index = "0" }
+        if (!$index) { $index = "0" }
         $name = "_$($env:COMPUTERNAME.Substring(0, $env:COMPUTERNAME.Length - 6))_"
         $nodeName = "$name$index"
     }
@@ -134,7 +123,7 @@ function set-nodeName($nodeName){
 }
 
 function write-log($data, $report) {
-    if(!$data) { return }
+    if (!$data) { return }
     $data = "$(get-date):$data"
     $sendReport = ($detail -imatch "true") -and $report
     $level = "Ok"
@@ -156,9 +145,24 @@ function write-log($data, $report) {
         try {
             if (!(get-serviceFabricClusterConnection)) { connect-servicefabriccluster }
             $error.clear()
-            if(!$report) { $report = $MyInvocation.ScriptName }
-            write-host "Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $report -Description `"$data`r`n`""
-            Send-ServiceFabricNodeHealthReport -NodeName $nodeName -HealthState $level -SourceId $source -HealthProperty $report -Description "$data"
+
+            if (!$report) { $report = $MyInvocation.ScriptName }
+            write-host "Send-ServiceFabricNodeHealthReport 
+                -RemoveWhenExpired
+                -TimeToLiveSec ($timeToLiveMinutes * 60)
+                -NodeName $nodeName 
+                -HealthState $level 
+                -SourceId $source 
+                -HealthProperty $report 
+                -Description `"$data`r`n`""
+                
+            Send-ServiceFabricNodeHealthReport -NodeName $nodeName `
+                -RemoveWhenExpired `
+                -TimeToLiveSec ($timeToLiveMinutes * 60) `
+                -HealthState $level `
+                -SourceId $source `
+                -HealthProperty $report `
+                -Description "$data"
         }
         catch {
             write-host "error sending report: $(($error | out-string))"
