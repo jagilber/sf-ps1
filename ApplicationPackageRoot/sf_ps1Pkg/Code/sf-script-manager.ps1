@@ -57,7 +57,7 @@ function monitor-jobs() {
                     write-log -data $jobInfo -report $job.name
                 }
             }
-            start-sleep -Seconds 1
+            start-sleep -Seconds ($sleepMinutes * 60)
         }
     }
 }
@@ -149,7 +149,7 @@ function write-log($data, $report) {
             if (!$report) { $report = $MyInvocation.ScriptName }
             write-host "Send-ServiceFabricNodeHealthReport 
                 -RemoveWhenExpired
-                -TimeToLiveSec ($timeToLiveMinutes * 60)
+                -TimeToLiveSec $($timeToLiveMinutes * 60)
                 -NodeName $nodeName 
                 -HealthState $level 
                 -SourceId $source 

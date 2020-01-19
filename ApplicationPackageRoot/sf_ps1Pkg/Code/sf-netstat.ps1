@@ -17,22 +17,27 @@ $ephemPortCount = [convert]::ToInt32($match.Groups["numberOfPorts"].Value)
 $ephemEndPort = $ephemStartPort + $ephemPortCount
 
 while ($true) {
-    $netStat = @{ }
     $timer = get-date
+    $netStat = @{ }
 
     $netStatRaw = Get-NetTCPConnection 
     $netStatSelected = $netStatRaw | select-object LocalPort, State
-    $netStatSelected | group-object State | foreach-object { $netStat["$($_.Name)_Conn"] = $_.Count }
-    $netStatSelected | sort-object State, LocalPort | select-object -Unique State, LocalPort | group-object State | foreach-object { $netStat["$($_.Name)_Ports"] = $_.Count }
 
-    $netStatObj = $netStat.GetEnumerator() | sort-object name | foreach-object -Begin { [PSObject]$o = @{ } } { $o | Add-Member -NotePropertyName $_.Name -NotePropertyValue $_.Value } -End { $o }
-    $ephemPortsInUse = @($netStatRaw | select-object LocalPort | where-object { (($_.LocalPort -ge $ephemStartPort) -and ($_.LocalPort -le $ephemEndPort)) }).Count
+    foreach($netStatItem in ($netStatSelected | group-object State)) {
+        $netStat.Add("$($netStatItem.Name)_Conn", $netStatItem.Count)
+    }
 
-    $msg = "`r`nephemeral ports available: $($ephemPortCount - $ephemPortsInUse)`r`n"
-    $msg += "all: $($netstatRaw.Count)`r`n$($netStatObj | ConvertTo-Json)`r`n"
+    foreach($netStatItem in ($netStatSelected | select-object -Unique State, LocalPort | group-object State)) {
+        $netStat.Add("$($netStatItem.Name)_Ports", $netStatItem.Count)
+    }
+
+    $ephemPortsInUse = @($netStatSelected | where-object {($_.LocalPort -ge $ephemStartPort -and $_.LocalPort -le $ephemEndPort) }).Count
     $netStatProcess = $netStatRaw | where-object OwningProcess -eq (get-process $processName).id
     $netStatProcessGrouped = $netStatProcess | group-object state
-    $msg += "$($processName): $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
+
+    $msg = "`r`nephemeral ports available: $($ephemPortCount - $ephemPortsInUse)`r`n"
+    $msg += "all ports in use: $($netstatRaw.Count)`r`n$($netStat | convertto-json )`r`n"
+    $msg += "$($processName) ports in use: $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
     
     if ($netStatRaw.Count -ge $ephemPortCount) {
         $msg += "ERROR: ephemeral port count >= max ephemeral connection count $ephemPortCount`r`n"
