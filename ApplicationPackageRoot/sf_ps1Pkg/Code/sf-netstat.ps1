@@ -11,9 +11,10 @@ $ErrorActionPreference = "continue"
 $result = netsh int ipv4 show dynamicportrange tcp
 $match = [regex]::Match($result, `
     "Start Port\s+:\s+(?<startPort>\d+).+?Number of Ports\s+:\s+(?<numberOfPorts>\d+)", `
-    [text.RegularExpressions.RegexOptions]::Singleline -bor [text.RegularExpressions.RegexOptions]::IgnoreCase);
-#$ephemStartPort = $match.Groups["startPort"].Value;
-$ephemPortCount = $match.Groups["numberOfPorts"].Value;
+    [text.RegularExpressions.RegexOptions]::Singleline -bor [text.RegularExpressions.RegexOptions]::IgnoreCase)
+$ephemStartPort = [convert]::ToInt32($match.Groups["startPort"].Value)
+$ephemPortCount = [convert]::ToInt32($match.Groups["numberOfPorts"].Value)
+$ephemEndPort = $ephemStartPort + $ephemPortCount
 
 while ($true) {
     $netStat = @{ }
@@ -22,11 +23,12 @@ while ($true) {
     $netStatRaw = Get-NetTCPConnection 
     $netStatSelected = $netStatRaw | select-object LocalPort, State
     $netStatSelected | group-object State | foreach-object { $netStat["$($_.Name)_Conn"] = $_.Count }
-
     $netStatSelected | sort-object State, LocalPort | select-object -Unique State, LocalPort | group-object State | foreach-object { $netStat["$($_.Name)_Ports"] = $_.Count }
-    $netStatObj = $netStat.GetEnumerator() | sort-object name | foreach-object -Begin { [PSObject]$o = @{ } } { $o | Add-Member -NotePropertyName $_.Name -NotePropertyValue $_.Value } -End { $o }
 
-    $msg = "`r`nephemeral ports available: $($ephemPortCount - $netstatRaw.Count)`r`n"
+    $netStatObj = $netStat.GetEnumerator() | sort-object name | foreach-object -Begin { [PSObject]$o = @{ } } { $o | Add-Member -NotePropertyName $_.Name -NotePropertyValue $_.Value } -End { $o }
+    $ephemPortsInUse = @($netStatRaw | select-object LocalPort | where-object { (($_.LocalPort -ge $ephemStartPort) -and ($_.LocalPort -le $ephemEndPort)) }).Count
+
+    $msg = "`r`nephemeral ports available: $($ephemPortCount - $ephemPortsInUse)`r`n"
     $msg += "all: $($netstatRaw.Count)`r`n$($netStatObj | ConvertTo-Json)`r`n"
     $netStatProcess = $netStatRaw | where-object OwningProcess -eq (get-process $processName).id
     $netStatProcessGrouped = $netStatProcess | group-object state
