@@ -2,9 +2,9 @@
 # TCP connection stats
 ###########################
 param(
-    $sleepMinutes = 1,
-    $processName = "fabricgateway",
-    $maxConnectionCount = 1000
+    [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
+    [string[]]$processNames = ($env:ProcessNames, "fabricgateway" -ne $null)[0],
+    $maxConnectionCount = ($env:maxConnectionCount, 1000 -ne $null)[0]
 )
 
 $ErrorActionPreference = "continue"
@@ -31,28 +31,33 @@ while ($true) {
         $netStat.Add("$($netStatItem.Name)_Ports", $netStatItem.Count)
     }
 
-    $ephemPortsInUse = @($netStatSelected | where-object {($_.LocalPort -ge $ephemStartPort -and $_.LocalPort -le $ephemEndPort) }).Count
-    $netStatProcess = $netStatRaw | where-object OwningProcess -eq (get-process $processName).id
-    $netStatProcessGrouped = $netStatProcess | group-object state
+    $ephemPortsInUse = @($netStatSelected | select-object -Unique LocalPort | where-object {($_.LocalPort -ge $ephemStartPort -and $_.LocalPort -le $ephemEndPort) }).Count
 
     $msg = "`r`nephemeral port range: $ephemStartPort - $ephemEndPort`r`n"
     $msg += "ephemeral ports available: $($ephemPortCount - $ephemPortsInUse)`r`n"
     $msg += "ephemeral ports in use: $ephemPortsInUse`r`n"
     $msg += "`r`ntotal network ports in use: $($netstatRaw.Count)`r`n$($netStat | convertto-json )`r`n"
-    $msg += "$($processName) ports in use: $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
-    
+
+    foreach($processName in @($processNames)) {
+        foreach($id in (get-process $processName).id) {
+            $netStatProcess = @($netStatRaw | where-object OwningProcess -eq $id)
+            $netStatProcessGrouped = $netStatProcess | group-object state
+            $msg += "$processName $id ports in use: $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
+
+            if ($netStatProcess.Count -ge $maxConnectionCount) {
+                $msg += "ERROR: $processName count over max connection count $maxConnectionCount`r`n"
+            }
+            elseif ($netStatProcess.count -gt ($maxConnectionCount * .8)) {
+                $msg += "WARNING: $processName connection count near max connection count $maxConnectionCount`r`n"
+            }
+        }
+    }
+
     if ($ephemPortsInUse -ge $ephemPortCount) {
         $msg += "ERROR: ephemeral port count >= max ephemeral connection count $ephemPortCount`r`n"
     }
     elseif ($ephemPortsInUse -gt ($ephemPortCount * .8)) {
         $msg += "WARNING: ephemeral port count near max ephemeral connection count $ephemPortCount`r`n"
-    }
-
-    if ($netStatProcess.Count -ge $maxConnectionCount) {
-        $msg += "ERROR: $processName count over max connection count $maxConnectionCount`r`n"
-    }
-    elseif ($netStatProcess.count -gt ($maxConnectionCount * .8)) {
-        $msg += "WARNING: $processName connection count near max connection count $maxConnectionCount`r`n"
     }
 
     $msg += "sleeping for $sleepMinutes minutes`r`n"
