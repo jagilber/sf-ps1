@@ -2,11 +2,12 @@
 # sf-ps1 template script
 # 
 ###########################
+[cmdletbinding()]
 param(
-    $sleepMinutes = 1,
-    $myErrorDescription = "",
-    $myWarningDescription = "",
-    $myDescription = ""
+    [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
+    [int]$myErrorDescription = $env:myErrorDescription,
+    [int]$myWarningDescription = $env:myWarningDescription,
+    [int]$myDescription = $env:myDescription
 )
 
 $ErrorActionPreference = "continue"
