@@ -3,7 +3,7 @@
 ###########################
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
-    [string[]]$processNames = ($env:ProcessNames, "fabricgateway" -ne $null)[0],
+    [string[]]$processNames = ($env:ProcessNames, @("fabric","fabrichost","fabricgateway") -ne $null)[0],
     $maxConnectionCount = ($env:maxConnectionCount, 1000 -ne $null)[0]
 )
 
@@ -42,7 +42,7 @@ while ($true) {
         foreach($id in (get-process $processName).id) {
             $netStatProcess = @($netStatRaw | where-object OwningProcess -eq $id)
             $netStatProcessGrouped = $netStatProcess | group-object state
-            $msg += "$processName $id ports in use: $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
+            $msg += "$processName pid: $id `r`nports in use: $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
 
             if ($netStatProcess.Count -ge $maxConnectionCount) {
                 $msg += "ERROR: $processName count over max connection count $maxConnectionCount`r`n"
