@@ -8,6 +8,8 @@ param(
 )
 
 $ErrorActionPreference = "continue"
+$error.clear()
+
 $result = netsh int ipv4 show dynamicportrange tcp
 $match = [regex]::Match($result, `
     "Start Port\s+:\s+(?<startPort>\d+).+?Number of Ports\s+:\s+(?<numberOfPorts>\d+)", `

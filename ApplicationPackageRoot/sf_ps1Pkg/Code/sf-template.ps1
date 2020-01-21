@@ -11,6 +11,7 @@ param(
 )
 
 $ErrorActionPreference = "continue"
+$error.clear()
 
 function main() {
     while ($true) {
@@ -19,8 +20,9 @@ function main() {
 
         {{my code}}
 
-        if ({{my error condition}}) {
+        if ({{my error condition}} -or $error) {
             $msg += "ERROR:$myErrorDescription`r`n"
+            $msg += "$($error | out-string)`r`n"
         }
         elseif ({{my warning condition}}) {
             $msg += "WARNING:$myWarningDescription`r`n"
