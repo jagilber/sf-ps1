@@ -35,9 +35,9 @@ while ($true) {
     $netStatProcess = $netStatRaw | where-object OwningProcess -eq (get-process $processName).id
     $netStatProcessGrouped = $netStatProcess | group-object state
 
-    $msg = "`r`ntcp ephemeral port range: $ephemStartPort - $ephemEndPort`r`n"
-    $msg += "tcp ephemeral ports available: $($ephemPortCount - $ephemPortsInUse)`r`n"
-    $msg += "tcp ephemeral ports in use: $ephemPortsInUse`r`n"
+    $msg = "`r`nephemeral port range: $ephemStartPort - $ephemEndPort`r`n"
+    $msg += "ephemeral ports available: $($ephemPortCount - $ephemPortsInUse)`r`n"
+    $msg += "ephemeral ports in use: $ephemPortsInUse`r`n"
     $msg += "`r`ntotal network ports in use: $($netstatRaw.Count)`r`n$($netStat | convertto-json )`r`n"
     $msg += "$($processName) ports in use: $($netStatProcess.Count)`r`n$($netStatProcessGrouped | out-string)`r`n"
     
