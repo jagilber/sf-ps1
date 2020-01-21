@@ -1,10 +1,10 @@
 #
 [cmdletbinding()]
 param(
-    [string]$scripts = "",
-    [int]$sleepMinutes = 1,
+    [string]$scripts = $env:scripts,
+    [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0],
     [string]$detail = $env:detail,
-    [int]$timeToLiveMinutes = 60
+    [int]$timeToLiveMinutes = ($env:timeToLiveMinutes, 60 -ne $null)[0]
 )
 
 $error.Clear()
@@ -57,7 +57,7 @@ function monitor-jobs() {
                     write-log -data $jobInfo -report $job.name
                 }
             }
-            start-sleep -Seconds ($sleepMinutes * 60)
+            start-sleep -Seconds $sleepSeconds
         }
     }
 }
