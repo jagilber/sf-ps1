@@ -20,7 +20,7 @@
                                     AzureActiveDirectory="true"
                                     ServerCertThumbprint="0123456789012345678901234567890123456789" />
   -->
-  <ClusterConnectionParameters ConnectionEndpoint="" X509Credential="true" ServerCertThumbprint="" FindType="FindByThumbprint" FindValue="" StoreLocation="CurrentUser" StoreName="My" />
+  <ClusterConnectionParameters ConnectionEndpoint="***REMOVED***:19000" X509Credential="true" ServerCertThumbprint="***REMOVED***" FindType="FindByThumbprint" FindValue="***REMOVED***" StoreLocation="CurrentUser" StoreName="My" />
   <ApplicationParameterFile Path="..\ApplicationParameters\Cloud.xml" />
   <CopyPackageParameters CompressPackage="true" />
 </PublishProfile>
