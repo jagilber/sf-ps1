@@ -110,29 +110,24 @@ function start-jobs() {
     }
 }
 
-function set-nodeName($nodeName) {
+function set-nodeName($nodeName = $env:COMPUTERNAME) {
     # base 36 -> base 10
     $alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
-    [long]$decNum=0
-    $pos=0
+    [long]$decimalNumber=0
+    $position=0
+    $base36Number = $nodeName.substring($nodeName.Length - 6).trimStart('0')
+    $name = "_$($nodeName.substring(0, $nodeName.Length - 6))_"
 
-    if (!$nodeName) {
-        $nodeName = $env:COMPUTERNAME
-    }
+    if (!$base36Number) { $base36Number = "0" }
+    $inputArray = $base36Number.toLower().toCharArray()
+    [array]::reverse($inputArray)
 
-    $base36Num = $nodeName.Substring($nodeName.Length - 6).trimstart('0')
-    $name = "_$($nodeName.Substring(0, $nodeName.Length - 6))_"
-
-    if (!$base36Num) { $base36Num = "0" }
-    $inputarray = $base36Num.tolower().tochararray()
-    [array]::reverse($inputarray)
-
-    foreach ($c in $inputarray) {
-        $decNum += $alphabet.IndexOf($c) * [long][Math]::Pow(36, $pos)
-        $pos++
+    foreach ($character in $inputArray) {
+        $decimalNumber += $alphabet.IndexOf($character) * [long][Math]::Pow(36, $position)
+        $position++
     }
     
-    $nodeName = "$name$decNum"
+    $nodeName = "$name$decimalNumber"
     write-log "using nodename $nodeName"
     return $nodeName
 }
