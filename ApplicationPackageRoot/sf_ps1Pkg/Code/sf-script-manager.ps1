@@ -111,13 +111,28 @@ function start-jobs() {
 }
 
 function set-nodeName($nodeName) {
+    # base 36 -> base 10
+    $alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+    [long]$decNum=0
+    $pos=0
+
     if (!$nodeName) {
-        $index = $env:COMPUTERNAME.Substring($env:COMPUTERNAME.Length - 6).trimstart('0')
-        if (!$index) { $index = "0" }
-        $name = "_$($env:COMPUTERNAME.Substring(0, $env:COMPUTERNAME.Length - 6))_"
-        $nodeName = "$name$index"
+        $nodeName = $env:COMPUTERNAME
     }
 
+    $base36Num = $nodeName.Substring($nodeName.Length - 6).trimstart('0')
+    $name = "_$($nodeName.Substring(0, $nodeName.Length - 6))_"
+
+    if (!$base36Num) { $base36Num = "0" }
+    $inputarray = $base36Num.tolower().tochararray()
+    [array]::reverse($inputarray)
+
+    foreach ($c in $inputarray) {
+        $decNum += $alphabet.IndexOf($c) * [long][Math]::Pow(36, $pos)
+        $pos++
+    }
+    
+    $nodeName = "$name$decNum"
     write-log "using nodename $nodeName"
     return $nodeName
 }
