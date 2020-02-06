@@ -16,7 +16,7 @@ $source = $env:Fabric_ServiceName
 function main() {
     try {
         write-log "starting"
-        $nodeName = set-nodeName -nodeName $nodeName
+        if (!$nodeName) { $nodeName = set-nodeName }
         if (!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
 
         connect-serviceFabricCluster
@@ -31,6 +31,7 @@ function main() {
     finally {
         remove-jobs
         write-log "finished"
+        exit
     }
 }
 

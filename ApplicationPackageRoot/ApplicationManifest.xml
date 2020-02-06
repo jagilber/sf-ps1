@@ -41,11 +41,38 @@
          application type is created. You can also create one or more instances of service type using the
          ServiceFabric PowerShell module.
 
-         The attribute ServiceTypeName below must match the name defined in the imported ServiceManifest.xml file. -->
+         The attribute ServiceTypeName below must match the name defined in the imported ServiceManifest.xml file.   -->
     <Service Name="sf_ps1" ServicePackageActivationMode="ExclusiveProcess">
       <StatelessService ServiceTypeName="sf_ps1Type" InstanceCount="[sf_ps1_InstanceCount]">
         <SingletonPartition />
       </StatelessService>
     </Service>
   </DefaultServices>
+  <Diagnostics>
+    <FolderSource
+        DataDeletionAgeInDays="1"
+        IsEnabled="true"
+        RelativeFolderPath="">
+      <!-- RelativeFolderPath is the name if any of the subfolder in 'log' folder for application in _App folder on node  for upload -->
+      <Destinations>
+        <!-- ConnectionString is storage account Access Keys connection string *without* EndpointSuffix
+              Should have:
+                DefaultEndpointsProtocol
+                AccountName
+                AccountKey
+        -->
+        <AzureBlob
+            ConnectionString=""
+            ConnectionStringIsEncrypted="false"
+            ContainerName="sf-ps1"
+            DataDeletionAgeInDays="9"
+            IsEnabled="true"
+            UploadIntervalInMinutes="1">
+          <Parameters>
+            <Parameter IsEncrypted="true" Name="test" Value="" />
+          </Parameters>
+        </AzureBlob>
+      </Destinations>
+    </FolderSource>
+  </Diagnostics>
 </ApplicationManifest>
