@@ -51,26 +51,26 @@
   <Diagnostics>
     <FolderSource
         DataDeletionAgeInDays="1"
-        IsEnabled="true"
+        IsEnabled="false"
         RelativeFolderPath="">
-      <!-- RelativeFolderPath is the name if any of the subfolder in 'log' folder for application in _App folder on node  for upload -->
+      <!-- https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-service-model-schema-elements#destinations-element-defined-in-foldersource
+          RelativeFolderPath is the name if any of the subfolder in 'log' folder for application in _App folder on node  for upload 
+      -->
       <Destinations>
         <!-- ConnectionString is storage account Access Keys connection string *without* EndpointSuffix
               Should have:
                 DefaultEndpointsProtocol
                 AccountName
                 AccountKey
+            With correct permissions, container will be created if not exists
         -->
         <AzureBlob
             ConnectionString=""
             ConnectionStringIsEncrypted="false"
             ContainerName="sf-ps1"
-            DataDeletionAgeInDays="9"
-            IsEnabled="true"
+            DataDeletionAgeInDays="10"
+            IsEnabled="false"
             UploadIntervalInMinutes="1">
-          <Parameters>
-            <Parameter IsEncrypted="true" Name="test" Value="" />
-          </Parameters>
         </AzureBlob>
       </Destinations>
     </FolderSource>
