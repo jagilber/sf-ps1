@@ -9,7 +9,7 @@ param(
 
 $error.Clear()
 $errorActionPreference = "continue"
-$scripts = @($scripts.Split(';'))
+$global:scriptCommands = @($scripts.Split(';'))
 $nodeName = $env:Fabric_NodeName
 $source = $env:Fabric_ServiceName
 
@@ -25,7 +25,7 @@ function main() {
         monitor-jobs
     }
     catch {
-        write-log "error:($error | out-string)"
+        write-log "error: $($_ | out-string)"
         write-error ($error | out-string)
     }
     finally {
@@ -36,20 +36,20 @@ function main() {
 }
 
 function monitor-jobs() {
-    write-log "monitoring jobs"
+    write-log -data "monitoring jobs"
 
     while (get-job) {
         foreach ($job in get-job) {
-            write-verbose ($job | format-list * | out-string)
+            write-log -data ($job | fl * | out-string)
 
             if ($job.state -ine "running") {
-                write-log -data ($job | format-list * | out-string) -report $job.name
+                write-log -data ($job | fl * | out-string) #-report $job.name
 
                 if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
-                    write-log -data "ERROR:$($job | format-list * | out-string)" -report $job.name
+                    write-log -data "ERROR:$($job | fl * | out-string)" -report $job.name
                 }
 
-                write-log -data ($job.output | ConvertTo-Json) -report $job.name
+                write-log -data ($job.output | fl * | out-string) -report $job.name
                 remove-job -Id $job.Id -Force  
             }
             else {
@@ -80,7 +80,15 @@ function remove-jobs() {
 
 function start-jobs() {
     write-log "start jobs scripts count: $($scripts.Count)"
-    foreach ($script in $scripts) {
+
+    if(!$global:scriptCommands) {
+        write-error "no scripts to execute. exiting"
+        return
+    }
+
+
+    foreach ($script in $global:scriptCommands) {
+        write-log "executing script: $($script)"
         $argIndex = $script.LastIndexOf('.ps1') + 4
         $scriptFile = $script.substring(0, $argIndex)
         $scriptArgs = $script.substring($argIndex).trim()
@@ -107,6 +115,12 @@ function start-jobs() {
             param($scriptFile, $scriptArgs)
             write-host "$scriptFile $scriptArgs"
             invoke-expression -command "$scriptFile $scriptArgs"
+            #if($scriptArgs) {
+            #write-host (start-process -filePath "powershell.exe" -ArgumentList "$scriptFile $scriptArgs" -Verb RunAs -wait)
+            #}
+            #else {
+            #    start-process -filePath $scriptFile -Verb RunAs -wait     
+			#}
         }
     }
 }
@@ -139,12 +153,12 @@ function write-log($data, $report) {
     $sendReport = ($detail -imatch "true") -and $report
     $level = "Ok"
 
-    if ($data -imatch "error") {
+    if ($sendReport -and $data -imatch "error") {
         write-error $data
         $level = "Error"
         $sendReport = $true
     }
-    elseif ($data -imatch "warning") {
+    elseif ($sendReport -and $data -imatch "warning") {
         write-warning $data
         $level = "Warning"
         $sendReport = $true
@@ -183,6 +197,7 @@ function write-log($data, $report) {
     }
 }
 
+write-log ($psboundparameters | out-string)
 # execute script
 main
 #

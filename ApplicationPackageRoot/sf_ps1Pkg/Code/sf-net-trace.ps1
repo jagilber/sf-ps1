@@ -15,20 +15,35 @@ $ErrorActionPreference = "continue"
 $error.clear()
 
 function main() {
+    try{
         $timer = get-date
-        $msg = "$($MyInvocation.ScriptName): $myDescription`r`n"
+        $msg = "$($MyInvocation.ScriptName)`r`n$psboundparameters : $myDescription`r`n"
+        write-output $msg
 
-        $msg += netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb tracefile=$traceFile filemode=circular
+        $msg = netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb tracefile=$traceFile filemode=circular
+        write-output $msg
+
         start-sleep -Seconds ($sleepMinutes * 60)
         $msg += netsh trace stop
+        write-output $msg
 
         if ($error) {
             $msg += "ERROR:$myErrorDescription`r`n"
             $msg += "$($error | out-string)`r`n"
         }
 
+        $msg += "copying files"
+        copy net.* ..\log
+
         $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())"
         write-output $msg
+    }
+    catch {
+        $msg += ($_ | out-string)
+        $msg += ($error | out-string)
+        write-output $msg
+	}
+
 }
 
 main

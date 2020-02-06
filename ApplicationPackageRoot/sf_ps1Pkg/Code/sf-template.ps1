@@ -14,26 +14,33 @@ $ErrorActionPreference = "continue"
 $error.clear()
 
 function main() {
-    while ($true) {
-        $timer = get-date
-        $msg = "$($MyInvocation.ScriptName): $myDescription`r`n"
+    try {
+        while ($true) {
+            $timer = get-date
+            $msg = "$($MyInvocation.ScriptName)`r`n$myDescription`r`n"
 
-        {{my code}}
+            {{my code}}
 
-        if ({{my error condition}} -or $error) {
-            $msg += "ERROR:$myErrorDescription`r`n"
-            $msg += "$($error | out-string)`r`n"
-        }
-        elseif ({{my warning condition}}) {
-            $msg += "WARNING:$myWarningDescription`r`n"
-        }
+            if ({{my error condition}} -or $error) {
+                $msg += "ERROR:$myErrorDescription`r`n"
+                $msg += "$($error | out-string)`r`n"
+            }
+            elseif ({{my warning condition}}) {
+                $msg += "WARNING:$myWarningDescription`r`n"
+            }
 
-        $msg += "sleeping for $sleepMinutes minutes`r`n"
-        $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())"
-        write-output $msg
+            $msg += "sleeping for $sleepMinutes minutes`r`n"
+            $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())"
+            write-output $msg
     
-        start-sleep -Seconds ($sleepMinutes * 60)
+            start-sleep -Seconds ($sleepMinutes * 60)
+        }
     }
+    catch {
+        $msg += ($_ | out-string)
+        $msg += ($error | out-string)
+        write-output $msg
+	}
 }
 
 main

@@ -35,6 +35,9 @@
       <EnvironmentVariable Name="codeVersion" Value="[sf_ps1_codeVersion]" />
       <EnvironmentVariable Name="detail" Value="[sf_ps1_detail]" />
     </EnvironmentOverrides>
+    <Policies>
+      <RunAsPolicy CodePackageRef="Code" UserRef="SetupLocalSystem" EntryPointType="Setup" />
+    </Policies>
   </ServiceManifestImport>
   <DefaultServices>
     <!-- The section below creates instances of service types, when an instance of this
@@ -48,13 +51,18 @@
       </StatelessService>
     </Service>
   </DefaultServices>
+  <Principals>
+    <Users>
+      <User Name="SetupLocalSystem" AccountType="LocalSystem" />
+    </Users>
+  </Principals>
   <Diagnostics>
     <FolderSource
         DataDeletionAgeInDays="1"
         IsEnabled="false"
         RelativeFolderPath="">
       <!-- https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-service-model-schema-elements#destinations-element-defined-in-foldersource
-          RelativeFolderPath is the name if any of the subfolder in 'log' folder for application in _App folder on node  for upload 
+          RelativeFolderPath is the name if any of the subfolder in 'log' folder for application in _App folder on node  for upload
       -->
       <Destinations>
         <!-- ConnectionString is storage account Access Keys connection string *without* EndpointSuffix
