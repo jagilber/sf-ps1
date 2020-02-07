@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ApplicationPackageRoot\ApplicationManifest.xml" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-net-trace.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-script-manager.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-netstat.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

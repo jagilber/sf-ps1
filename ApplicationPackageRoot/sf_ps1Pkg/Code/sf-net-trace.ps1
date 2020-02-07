@@ -19,13 +19,31 @@ function main() {
         $timer = get-date
         $msg = "$($MyInvocation.ScriptName)`r`n$psboundparameters : $myDescription`r`n"
         write-output $msg
+        $session = "nettrace"
 
         $msg = netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb tracefile=$traceFile filemode=circular
+        <#
+        $csvFile = "net.csv"
+        if(Get-NetEventSession -Name $session) {
+            Stop-NetEventSession -Name $session
+            Remove-NetEventSession -Name $session
+        }
+
+        $error.Clear()
+        New-NetEventSession -Name $session -CaptureMode SaveToFile -MaxFileSize 1024 -MaxNumberOfBuffers 15 -TraceBufferSize 1024 -LocalFilePath $pwd\$traceFile
+        Add-NetEventProvider -Name "Microsoft-Windows-TCPIP" -SessionName $session
+        Add-NetEventPacketCaptureProvider -SessionName $session
+        Start-NetEventSession -Name $session
+        #>        
+        write-output $msg
+        start-sleep -Seconds ($sleepMinutes * 60)
+
+        $msg += netsh trace stop
+        #Stop-NetEventSession -Name $session
+        #Remove-NetEventSession -Name $session
         write-output $msg
 
-        start-sleep -Seconds ($sleepMinutes * 60)
-        $msg += netsh trace stop
-        write-output $msg
+        # Get-WinEvent -Path $pwd\$traceFile -Oldest | Select-Object TimeCreated, ProcessId, ThreadId, RecordId, Message | ConvertTo-Csv | out-file $pwd\$csvFile
 
         if ($error) {
             $msg += "ERROR:$myErrorDescription`r`n"

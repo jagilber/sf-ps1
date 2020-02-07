@@ -17,26 +17,19 @@
     <!--
     <SetupEntryPoint>
       <ExeHost>
-        <Program>sf-script.ps1</Program>
-        <Arguments>/c powershell.exe -nologo -noprofile -noninteractive -windowstyle hidden -file .\sf-script.ps1</Arguments>
-      </ExeHost>
-    </SetupEntryPoint>
-    -->
-    <!--<EntryPoint>-->
-    <SetupEntryPoint>
-      <ExeHost>
         <Program>sf-script.bat</Program>
-        <Arguments>&lt; nul</Arguments>
+        <Arguments>setupentrypoint &lt; nul</Arguments>
         <WorkingFolder>Work</WorkingFolder>
-        <!-- Uncomment to log console output (both stdout and stderr) to one of the
-             service's working directories. -->
+        Uncomment to log console output (both stdout and stderr) to one of the
+             service's working directories.
         <ConsoleRedirection FileRetentionCount="5" FileMaxSizeInKb="2048" />
       </ExeHost>
     </SetupEntryPoint>
+    -->
     <EntryPoint>
       <ExeHost>
         <Program>sf-script.bat</Program>
-        <Arguments>entrypoint</Arguments>
+        <Arguments>entrypoint &lt; nul</Arguments>
         <WorkingFolder>Work</WorkingFolder>
         <!-- Uncomment to log console output (both stdout and stderr) to one of the
              service's working directories. -->
@@ -44,6 +37,7 @@
       </ExeHost>
     </EntryPoint>
     <EnvironmentVariables>
+      <EnvironmentVariable Name="setupScripts" Value="" />
       <EnvironmentVariable Name="scripts" Value="" />
       <EnvironmentVariable Name="codeVersion" Value="" />
       <EnvironmentVariable Name="detail" Value="false" />
