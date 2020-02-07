@@ -40,7 +40,7 @@ function monitor-jobs() {
 
     while (get-job) {
         foreach ($job in get-job) {
-            write-log -data ($job | fl * | out-string)
+            write-verbose -data ($job | fl * | out-string)
 
             if ($job.state -ine "running") {
                 write-log -data ($job | fl * | out-string) #-report $job.name
@@ -86,7 +86,6 @@ function start-jobs() {
         return
     }
 
-
     foreach ($script in $global:scriptCommands) {
         write-log "executing script: $($script)"
         $argIndex = $script.LastIndexOf('.ps1') + 4
@@ -109,18 +108,12 @@ function start-jobs() {
         }
 
         $scriptFile = resolve-path $scriptFile
-
         write-log "starting $scriptFile $scriptArgs"
         start-job -Name $scriptFileName -ArgumentList @($scriptFile, $scriptArgs) -scriptblock { 
             param($scriptFile, $scriptArgs)
             write-host "$scriptFile $scriptArgs"
             invoke-expression -command "$scriptFile $scriptArgs"
-            #if($scriptArgs) {
-            #write-host (start-process -filePath "powershell.exe" -ArgumentList "$scriptFile $scriptArgs" -Verb RunAs -wait)
-            #}
-            #else {
-            #    start-process -filePath $scriptFile -Verb RunAs -wait     
-			#}
+            #start-process -filePath "powershell.exe" -ArgumentList "$scriptFile $scriptArgs" -Verb RunAs -wait
         }
     }
 }
