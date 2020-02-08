@@ -4,6 +4,7 @@ param(
     [string]$scripts = $env:scripts,
     [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0],
     [string]$detail = $env:detail,
+    [string[]]$runOnNodes = $env:runOnNodes,
     [int]$timeToLiveMinutes = ($env:timeToLiveMinutes, 60 -ne $null)[0],
     [datetime]$scriptStartDateTimeUtc = ($env:scriptStartDateTimeUtc, (get-date).ToUniversalTime() -ne $null)[0],
     [int]$scriptReccurrenceMinutes = ($env:scriptReccurrenceMinutes, 0 -ne $null)[0]
@@ -20,6 +21,16 @@ function main() {
         write-log "starting"
         if (!$nodeName) { $nodeName = set-nodeName }
         if (!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
+
+        if(@($runOnNodes) -and !$runOnNodes.Contains($nodeName)) {
+            write-log "$nodeName not in list of runOnNodes $($runOnNodes | fl * | out-string)"
+            return
+        }
+
+        if(!$env:Path.Contains($pwd)) {
+            $env:Path += ";$pwd"
+            write-host "$(get-date) new path $env:Path" -ForegroundColor Green
+        }
 
         connect-serviceFabricCluster
         remove-jobs
@@ -139,7 +150,10 @@ function start-jobs() {
             param($scriptFile, $scriptArgs)
             write-host "$scriptFile $scriptArgs"
             invoke-expression -command "$scriptFile $scriptArgs"
-            #start-process -filePath "powershell.exe" -ArgumentList "$scriptFile $scriptArgs" -Verb RunAs -wait
+
+            # todo
+            #start-process -passthru -nonewwindow -verb RunAs -filePath "powershell.exe" -ArgumentList "$scriptFile $scriptArgs"
+            #start-process -passthru -nonewwindow -filePath "powershell.exe" -ArgumentList "$scriptFile $scriptArgs"
         }
     }
 }
