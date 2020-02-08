@@ -12,7 +12,7 @@
   <Parameters>
     <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-net-trace.ps1;.\sf-netstat.ps1" />
     <Parameter Name="sf_ps1_scriptStartDateTimeUtc" DefaultValue="" />
-    <Parameter Name="sf_ps1_scriptReccurrenceMinutes" DefaultValue="" />
+    <Parameter Name="sf_ps1_scriptRecurrenceMinutes" DefaultValue="" />
     <Parameter Name="sf_ps1_storageKey" DefaultValue="" />
     <Parameter Name="sf_ps1_runOnNodes" DefaultValue="" />
     <Parameter Name="sf_ps1_detail" DefaultValue="true" />
@@ -39,7 +39,7 @@
       <EnvironmentVariable Name="scripts" Value="[sf_ps1_scripts]" />
       <EnvironmentVariable Name="runOnNodes" Value="[sf_ps1_runOnNodes]" />
       <EnvironmentVariable Name="scriptStartDateTimeUtc" Value="[sf_ps1_scriptStartDateTimeUtc]" />
-      <EnvironmentVariable Name="scriptReccurrenceMinutes" Value="[sf_ps1_scriptReccurrenceMinutes]" />
+      <EnvironmentVariable Name="scriptRecurrenceMinutes" Value="[sf_ps1_scriptRecurrenceMinutes]" />
       <EnvironmentVariable Name="detail" Value="[sf_ps1_detail]" />
       <EnvironmentVariable Name="codeVersion" Value="[sf_ps1_codeVersion]" />
       <EnvironmentVariable Name="setupScripts" Value="[sf_ps1_setupScripts]" />

@@ -43,7 +43,7 @@
       <EnvironmentVariable Name="detail" Value="false" />
       <EnvironmentVariable Name="sleepSeconds" Value="" />
       <EnvironmentVariable Name="scriptStartDateTimeUtc" Value="" />
-      <EnvironmentVariable Name="scriptReccurrenceMinutes" Value="" />
+      <EnvironmentVariable Name="scriptRecurrenceMinutes" Value="" />
       <EnvironmentVariable Name="runOnNodes" Value="" />
     </EnvironmentVariables>
   </CodePackage>

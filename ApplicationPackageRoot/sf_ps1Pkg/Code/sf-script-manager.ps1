@@ -7,7 +7,7 @@ param(
     [string[]]$runOnNodes = $env:runOnNodes,
     [int]$timeToLiveMinutes = ($env:timeToLiveMinutes, 60 -ne $null)[0],
     [datetime]$scriptStartDateTimeUtc = ($env:scriptStartDateTimeUtc, (get-date).ToUniversalTime() -ne $null)[0],
-    [int]$scriptReccurrenceMinutes = ($env:scriptReccurrenceMinutes, 0 -ne $null)[0]
+    [int]$scriptRecurrenceMinutes = ($env:scriptRecurrenceMinutes, 0 -ne $null)[0]
 )
 
 $error.Clear()
@@ -45,10 +45,10 @@ function main() {
         start-jobs
         monitor-jobs
 
-        if($scriptReccurrenceMinutes) {
+        if($scriptRecurrenceMinutes) {
             $recurrenceStartDateTimeUtc = $scriptStartDateTimeUtc
             while($true) {
-                $recurrenceStartDateTimeUtc = $recurrenceStartDateTimeUtc.addMinutes($scriptReccurrenceMinutes)
+                $recurrenceStartDateTimeUtc = $recurrenceStartDateTimeUtc.addMinutes($scriptRecurrenceMinutes)
                 if ($reccurenceStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
                     $totalSeconds = ([datetime]($recurrenceStartDateTimeUtc.Ticks - (get-date).ToUniversalTime().Ticks)).Second
                     write-log "waiting $totalSeconds seconds for recurrencetime: $scriptStartDateTimeUtc"
