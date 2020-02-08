@@ -50,7 +50,7 @@ function main() {
             $recurrenceStartDateTimeUtc = $scriptStartDateTimeUtc
             while($true) {
                 $recurrenceStartDateTimeUtc = $recurrenceStartDateTimeUtc.addMinutes($scriptRecurrenceMinutes)
-                if ($reccurenceStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
+                if ($recurrenceStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
                     $totalSeconds = ([datetime]($recurrenceStartDateTimeUtc.Ticks - (get-date).ToUniversalTime().Ticks)).Second
                     write-log "waiting $totalSeconds seconds for recurrencetime: $scriptStartDateTimeUtc"
                     Start-Sleep -Seconds $totalSeconds
