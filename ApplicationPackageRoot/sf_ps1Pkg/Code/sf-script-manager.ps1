@@ -4,7 +4,7 @@ param(
     [string]$scripts = $env:scripts,
     [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0],
     [string]$detail = $env:detail,
-    [string[]]$runOnNodes = $env:runOnNodes,
+    [string]$runOnNodes = $env:runOnNodes,
     [int]$timeToLiveMinutes = ($env:timeToLiveMinutes, 60 -ne $null)[0],
     [datetime]$scriptStartDateTimeUtc = ($env:scriptStartDateTimeUtc, (get-date).ToUniversalTime() -ne $null)[0],
     [int]$scriptRecurrenceMinutes = ($env:scriptRecurrenceMinutes, 0 -ne $null)[0]
@@ -13,6 +13,7 @@ param(
 $error.Clear()
 $errorActionPreference = "continue"
 $global:scriptCommands = @($scripts.Split(';'))
+$global:nodes = @($runOnNodes.Split(','))
 $nodeName = $env:Fabric_NodeName
 $source = $env:Fabric_ServiceName
 
@@ -22,8 +23,8 @@ function main() {
         if (!$nodeName) { $nodeName = set-nodeName }
         if (!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
 
-        if(@($runOnNodes) -and !$runOnNodes.Contains($nodeName)) {
-            write-log "$nodeName not in list of runOnNodes $($runOnNodes | fl * | out-string)"
+        if(@($global:nodes) -and !$global:nodes.Contains($nodeName)) {
+            write-log "$nodeName not in list of runOnNodes $($runOnNodes | fl * | out-string)`r`nreturning"
             return
         }
 
