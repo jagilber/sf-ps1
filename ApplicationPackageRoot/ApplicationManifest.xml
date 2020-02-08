@@ -4,18 +4,19 @@
                      xmlns="http://schemas.microsoft.com/2011/01/fabric"
                      xmlns:xsd="http://www.w3.org/2001/XMLSchema"
                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <Parameters>
-    <Parameter Name="sf_ps1_InstanceCount" DefaultValue="-1" />
-    <!--'sf_ps1_scripts' string containing path to script and arguments to run as exehost stateless service.
+  <!--'sf_ps1_scripts' string containing path to script and arguments to run as exehost stateless service.
         use semicolon ';' to separate script commands if using multiple scripts.
         paths can be local or url.
         example:.\test2.ps1 -runMinutes 2;.\test.ps1 -totalMinutes 1;https://raw.githubusercontent.com/jagilber/sf-ps1/master/ApplicationPackageRoot/sf_ps1Pkg/Code/sf-netstat.ps1 -sleepMinutes 4
         -->
+  <Parameters>
+    <Parameter Name="sf_ps1_InstanceCount" DefaultValue="-1" />
     <Parameter Name="sf_ps1_setupScripts" DefaultValue="" />
     <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-net-trace.ps1;.\sf-netstat.ps1" />
     <Parameter Name="sf_ps1_codeVersion" DefaultValue="1.0.0" />
     <Parameter Name="sf_ps1_detail" DefaultValue="true" />
-    <!--<Parameter Name="sf_ps1_scripts" DefaultValue="" />-->
+    <Parameter Name="sf_ps1_storageKey" DefaultValue="" />
+    <Parameter Name="sf_ps1_sleepSeconds" DefaultValue="" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion
        should match the Name and Version attributes of the ServiceManifest element defined in the
@@ -36,6 +37,7 @@
       <EnvironmentVariable Name="scripts" Value="[sf_ps1_scripts]" />
       <EnvironmentVariable Name="codeVersion" Value="[sf_ps1_codeVersion]" />
       <EnvironmentVariable Name="detail" Value="[sf_ps1_detail]" />
+      <EnvironmentVariable Name="sleepSeconds" Value="[sf_ps1_sleepSeconds]" />
     </EnvironmentOverrides>
     <Policies>
       <RunAsPolicy CodePackageRef="Code" UserRef="SetupLocalSystem" EntryPointType="Main" />
@@ -61,7 +63,7 @@
   <Diagnostics>
     <FolderSource
         DataDeletionAgeInDays="1"
-        IsEnabled="false"
+        IsEnabled="true"
         RelativeFolderPath="">
       <!-- https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-service-model-schema-elements#destinations-element-defined-in-foldersource
           RelativeFolderPath is the name if any of the subfolder in 'log' folder for application in _App folder on node  for upload
@@ -75,11 +77,11 @@
             With correct permissions, container will be created if not exists
         -->
         <AzureBlob
-            ConnectionString=""
+            ConnectionString="[sf_ps1_storageKey]"
             ConnectionStringIsEncrypted="false"
             ContainerName="sf-ps1"
             DataDeletionAgeInDays="10"
-            IsEnabled="false"
+            IsEnabled="true"
             UploadIntervalInMinutes="1">
         </AzureBlob>
       </Destinations>

@@ -40,7 +40,9 @@ function monitor-jobs() {
 
     while (get-job) {
         foreach ($job in get-job) {
-            write-verbose -data ($job | fl * | out-string)
+            if($detail) {
+                write-log -data ($job | fl * | out-string)
+            }
 
             if ($job.state -ine "running") {
                 write-log -data ($job | fl * | out-string) #-report $job.name

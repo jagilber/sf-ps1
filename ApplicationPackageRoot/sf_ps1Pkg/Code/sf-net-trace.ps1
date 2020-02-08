@@ -8,7 +8,8 @@ param(
     [string]$myErrorDescription = ($env:myErrorDescription, "capture network trace with netsh" -ne $null)[0],
     [string]$myDescription = ($env:myDescription, "capture network trace with netsh" -ne $null)[0],
     [string]$traceFile = ($env:traceFile, "$pwd\net.etl" -ne $null)[0],
-    [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0]
+    [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0],
+    [string]$csvFile = ($env:csvFile, "$pwd\net.csv" -ne $null)[0]
 )
 
 $ErrorActionPreference = "continue"
@@ -16,52 +17,46 @@ $error.clear()
 
 function main() {
     try{
+        $session = "nettrace"        
         $timer = get-date
-        $msg = "$($MyInvocation.ScriptName)`r`n$psboundparameters : $myDescription`r`n"
-        write-output $msg
-        $session = "nettrace"
+        write-output "$($MyInvocation.ScriptName)`r`n$psboundparameters : $myDescription`r`n"
 
-        $msg = netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb tracefile=$traceFile filemode=circular
-        <#
-        $csvFile = "net.csv"
-        if(Get-NetEventSession -Name $session) {
-            Stop-NetEventSession -Name $session
-            Remove-NetEventSession -Name $session
+        $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+
+        if(!$isAdmin){
+            write-output "error:restart script as administrator"
+            return
         }
 
-        $error.Clear()
-        New-NetEventSession -Name $session -CaptureMode SaveToFile -MaxFileSize 1024 -MaxNumberOfBuffers 15 -TraceBufferSize 1024 -LocalFilePath $pwd\$traceFile
-        Add-NetEventProvider -Name "Microsoft-Windows-TCPIP" -SessionName $session
-        Add-NetEventPacketCaptureProvider -SessionName $session
-        Start-NetEventSession -Name $session
-        #>        
-        write-output $msg
+        write-output "$(get-date) stopping existing trace`r`n"
+        write-output (netsh trace stop)
+
+        write-output "$(get-date) starting trace`r`n"
+        write-output (netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb tracefile=$traceFile filemode=circular)
+
+        write-output "$(get-date) sleeping $sleepMinutes minutes`r`n"
         start-sleep -Seconds ($sleepMinutes * 60)
 
-        $msg += netsh trace stop
-        #Stop-NetEventSession -Name $session
-        #Remove-NetEventSession -Name $session
-        write-output $msg
-
-        # Get-WinEvent -Path $pwd\$traceFile -Oldest | Select-Object TimeCreated, ProcessId, ThreadId, RecordId, Message | ConvertTo-Csv | out-file $pwd\$csvFile
+        write-output "$(get-date) stopping trace`r`n"
+        write-output (netsh trace stop)
 
         if ($error) {
-            $msg += "ERROR:$myErrorDescription`r`n"
-            $msg += "$($error | out-string)`r`n"
+            write-output "ERROR:$myErrorDescription`r`n"
+            write-output "$($error | out-string)`r`n"
         }
 
-        $msg += "copying files"
+        write-output "copying files`r`n"
         copy net.* ..\log
-
-        $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())"
-        write-output $msg
+        
+        write-output "$(get-date) timer: $(((get-date) - $timer).tostring())`r`n"
+        write-output "$(get-date) finished`r`n"
+        
     }
     catch {
-        $msg += ($_ | out-string)
-        $msg += ($error | out-string)
-        write-output $msg
+        write-output ($_ | out-string)
+        write-output ($error | out-string)
+        
 	}
-
 }
 
 main

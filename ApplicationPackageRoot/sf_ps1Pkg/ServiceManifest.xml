@@ -41,6 +41,7 @@
       <EnvironmentVariable Name="scripts" Value="" />
       <EnvironmentVariable Name="codeVersion" Value="" />
       <EnvironmentVariable Name="detail" Value="false" />
+      <EnvironmentVariable Name="sleepSeconds" Value="" />
     </EnvironmentVariables>
   </CodePackage>
 
