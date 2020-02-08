@@ -21,7 +21,7 @@ function main() {
         if (!$nodeName) { $nodeName = set-nodeName }
         if (!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
 
-        #connect-serviceFabricCluster
+        connect-serviceFabricCluster
         remove-jobs
 
         if ($scriptStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
@@ -199,7 +199,7 @@ function write-log($data, $report) {
     }
 
     write-host "$level : $sendReport : $report : $stringData`r`n"
-return
+
     if ($sendReport) {
         try {
             if (!(get-serviceFabricClusterConnection)) { connect-servicefabriccluster }

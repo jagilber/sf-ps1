@@ -21,7 +21,7 @@ function main() {
         $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 
         if(!$isAdmin){
-            write-output "error:restart script as administrator"
+            write-error "error:restart script as administrator"
             return
         }
 
