@@ -8,6 +8,8 @@ param(
     [string]$myErrorDescription = ($env:myErrorDescription, "capture network trace with netsh" -ne $null)[0],
     [string]$myDescription = ($env:myDescription, "capture network trace with netsh" -ne $null)[0],
     [string]$traceFile = ($env:traceFile, "$pwd\net.etl" -ne $null)[0],
+    [string]$outputFilePattern = ($env:outputFilePattern, "net.*" -ne $null)[0],
+    [string]$outputFileDestination = ($env:outputFileDestination, "..\log" -ne $null)[0],
     [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0]
 )
 
@@ -42,8 +44,8 @@ function main() {
             write-host "$($error | out-string)`r`n"
         }
 
-        write-host "$(get-date) copying files" -ForegroundColor green
-        copy net.* ..\log
+        write-host "$(get-date) copying files $outputFilePattern to $outputFileDestination" -ForegroundColor green
+        copy-item $outputFilePattern $outputFileDestination
 
         write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
         write-host "$(get-date) finished" -ForegroundColor green
