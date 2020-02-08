@@ -17,29 +17,26 @@ function main() {
     try {
         while ($true) {
             $timer = get-date
-            $msg = "$($MyInvocation.ScriptName)`r`n$myDescription`r`n"
+            write-host "$($MyInvocation.ScriptName)`r`n$myDescription`r`n" -ForegroundColor green
 
             {{my code}}
 
             if ({{my error condition}} -or $error) {
-                $msg += "ERROR:$myErrorDescription`r`n"
-                $msg += "$($error | out-string)`r`n"
+                write-error "ERROR:$myErrorDescription`r`n"
+                write-host "$($error | out-string)`r`n" -ForegroundColor red
             }
             elseif ({{my warning condition}}) {
-                $msg += "WARNING:$myWarningDescription`r`n"
+                write-warning "WARNING:$myWarningDescription`r`n"
             }
 
-            $msg += "sleeping for $sleepMinutes minutes`r`n"
-            $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())"
-            write-output $msg
-    
+            write-host "sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
+            write-host "$(get-date) timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
             start-sleep -Seconds ($sleepMinutes * 60)
         }
     }
     catch {
-        $msg += ($_ | out-string)
-        $msg += ($error | out-string)
-        write-output $msg
+        write-error "exception:$($_ | out-string)"
+        write-error "$($error | out-string)"
 	}
 }
 

@@ -17,48 +17,30 @@ $error.clear()
 function main() {
     try{
         $timer = get-date
-        $msg = "$($MyInvocation.ScriptName)`r`n$psboundparameters : $myDescription`r`n"
-        write-output $msg
-        $session = "nettrace"
+        write-host "$($MyInvocation.ScriptName)`r`n$psboundparameters : $myDescription`r`n"
+        write-host "$(get-date) starting trace" -ForegroundColor green
+        netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb tracefile=$traceFile filemode=circular
 
-        $msg = netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb tracefile=$traceFile filemode=circular
-        <#
-        $csvFile = "net.csv"
-        if(Get-NetEventSession -Name $session) {
-            Stop-NetEventSession -Name $session
-            Remove-NetEventSession -Name $session
-        }
-
-        $error.Clear()
-        New-NetEventSession -Name $session -CaptureMode SaveToFile -MaxFileSize 1024 -MaxNumberOfBuffers 15 -TraceBufferSize 1024 -LocalFilePath $pwd\$traceFile
-        Add-NetEventProvider -Name "Microsoft-Windows-TCPIP" -SessionName $session
-        Add-NetEventPacketCaptureProvider -SessionName $session
-        Start-NetEventSession -Name $session
-        #>        
-        write-output $msg
+        write-host "$(get-date) sleeping $sleepMinutes minutes" -ForegroundColor green
         start-sleep -Seconds ($sleepMinutes * 60)
 
-        $msg += netsh trace stop
-        #Stop-NetEventSession -Name $session
-        #Remove-NetEventSession -Name $session
-        write-output $msg
-
-        # Get-WinEvent -Path $pwd\$traceFile -Oldest | Select-Object TimeCreated, ProcessId, ThreadId, RecordId, Message | ConvertTo-Csv | out-file $pwd\$csvFile
+        write-host "$(get-date) stopping trace" -ForegroundColor green
+        netsh trace stop
 
         if ($error) {
-            $msg += "ERROR:$myErrorDescription`r`n"
-            $msg += "$($error | out-string)`r`n"
+            write-host "ERROR:$myErrorDescription`r`n"
+            write-host "$($error | out-string)`r`n"
         }
 
-        $msg += "copying files"
+        write-host "$(get-date) copying files" -ForegroundColor green
         copy net.* ..\log
 
-        $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())"
-        write-output $msg
+        write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
+        write-host "$(get-date) finished" -ForegroundColor green
     }
     catch {
-        $msg += ($_ | out-string)
-        $msg += ($error | out-string)
+        write-error ($_ | out-string)
+        write-error ($error | out-string)
         write-output $msg
 	}
 
