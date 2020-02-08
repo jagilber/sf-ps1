@@ -31,8 +31,8 @@ function main() {
 
         if(Get-NetEventSession) {
             write-host "$(get-date) removing old trace session`r`n"
-            #write-host (Stop-NetEventSession -Name $session)
-            write-host (Get-NetEventSession | Remove-NetEventSession)
+            #Stop-NetEventSession -Name $session
+            Get-NetEventSession | Remove-NetEventSession
         }
 
         $error.Clear()
