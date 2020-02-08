@@ -42,6 +42,8 @@
       <EnvironmentVariable Name="codeVersion" Value="" />
       <EnvironmentVariable Name="detail" Value="false" />
       <EnvironmentVariable Name="sleepSeconds" Value="" />
+      <EnvironmentVariable Name="scriptStartDateTimeUtc" Value="" />
+      <EnvironmentVariable Name="scriptReccurrenceMinutes" Value="" />
     </EnvironmentVariables>
   </CodePackage>
 

@@ -13,6 +13,8 @@
     <Parameter Name="sf_ps1_InstanceCount" DefaultValue="-1" />
     <Parameter Name="sf_ps1_setupScripts" DefaultValue="" />
     <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-net-trace.ps1;.\sf-netstat.ps1" />
+    <Parameter Name="sf_ps1_scriptStartDateTimeUtc" DefaultValue="" />
+    <Parameter Name="sf_ps1_scriptReccurrenceMinutes" DefaultValue="" />
     <Parameter Name="sf_ps1_codeVersion" DefaultValue="1.0.0" />
     <Parameter Name="sf_ps1_detail" DefaultValue="true" />
     <Parameter Name="sf_ps1_storageKey" DefaultValue="" />
@@ -38,6 +40,8 @@
       <EnvironmentVariable Name="codeVersion" Value="[sf_ps1_codeVersion]" />
       <EnvironmentVariable Name="detail" Value="[sf_ps1_detail]" />
       <EnvironmentVariable Name="sleepSeconds" Value="[sf_ps1_sleepSeconds]" />
+      <EnvironmentVariable Name="scriptStartDateTimeUtc" Value="[sf_ps1_scriptStartDateTimeUtc]" />
+      <EnvironmentVariable Name="scriptReccurrenceMinutes" Value="[sf_ps1_scriptReccurrenceMinutes]" />
     </EnvironmentOverrides>
     <Policies>
       <RunAsPolicy CodePackageRef="Code" UserRef="SetupLocalSystem" EntryPointType="Main" />

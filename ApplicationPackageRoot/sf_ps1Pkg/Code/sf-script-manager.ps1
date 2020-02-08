@@ -4,7 +4,9 @@ param(
     [string]$scripts = $env:scripts,
     [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0],
     [string]$detail = $env:detail,
-    [int]$timeToLiveMinutes = ($env:timeToLiveMinutes, 60 -ne $null)[0]
+    [int]$timeToLiveMinutes = ($env:timeToLiveMinutes, 60 -ne $null)[0],
+    [datetime]$scriptStartDateTimeUtc = $env:scriptStartDateTimeUtc,
+    [int]$scriptReccurrenceMinutes = $env:scriptReccurrenceMinutes
 )
 
 $error.Clear()
@@ -19,10 +21,34 @@ function main() {
         if (!$nodeName) { $nodeName = set-nodeName }
         if (!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
 
-        connect-serviceFabricCluster
+        #connect-serviceFabricCluster
         remove-jobs
+
+        if ($scriptStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
+            $totalSeconds = ([datetime]($scriptStartDateTimeUtc.Ticks - (get-date).ToUniversalTime().Ticks)).Second
+            write-log "waiting $totalSeconds seconds for starttime: $scriptStartDateTimeUtc"
+            Start-Sleep -Seconds $totalSeconds
+            write-log "resuming for starttime: $scriptStartDateTimeUtc"
+        }
+
         start-jobs
         monitor-jobs
+
+        if($scriptReccurrenceMinutes) {
+            $recurrenceStartDateTimeUtc = $scriptStartDateTimeUtc
+            while($true) {
+                $recurrenceStartDateTimeUtc = $recurrenceStartDateTimeUtc.addMinutes($scriptReccurrenceMinutes)
+                if ($reccurenceStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
+                    $totalSeconds = ([datetime]($recurrenceStartDateTimeUtc.Ticks - (get-date).ToUniversalTime().Ticks)).Second
+                    write-log "waiting $totalSeconds seconds for recurrencetime: $scriptStartDateTimeUtc"
+                    Start-Sleep -Seconds $totalSeconds
+                    write-log "resuming for recurrence: $scriptStartDateTimeUtc"
+                }
+
+                start-jobs
+                monitor-jobs
+            }
+        }
     }
     catch {
         write-log "error: $($_ | out-string)"
@@ -173,7 +199,7 @@ function write-log($data, $report) {
     }
 
     write-host "$level : $sendReport : $report : $stringData`r`n"
-
+return
     if ($sendReport) {
         try {
             if (!(get-serviceFabricClusterConnection)) { connect-servicefabriccluster }
