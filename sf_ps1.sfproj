@@ -25,6 +25,7 @@
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-netstat.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-net-trace.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-template.ps1" />
     <None Include="ApplicationParameters\Cloud.xml" />
     <None Include="ApplicationParameters\Local.1Node.xml" />

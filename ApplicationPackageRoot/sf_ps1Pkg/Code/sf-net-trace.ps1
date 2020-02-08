@@ -18,6 +18,16 @@ function main() {
     try{
         $timer = get-date
         write-host "$($MyInvocation.ScriptName)`r`n$psboundparameters : $myDescription`r`n"
+        $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+
+        if(!$isAdmin){
+            write-error "error:restart script as administrator"
+            return
+        }
+
+        write-host "$(get-date) stopping existing trace`r`n" -ForegroundColor green
+        netsh trace stop
+
         write-host "$(get-date) starting trace" -ForegroundColor green
         netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb tracefile=$traceFile filemode=circular
 
@@ -41,9 +51,7 @@ function main() {
     catch {
         write-error ($_ | out-string)
         write-error ($error | out-string)
-        write-output $msg
 	}
-
 }
 
 main
