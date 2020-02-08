@@ -37,21 +37,18 @@ function main() {
 
 function monitor-jobs() {
     write-log -data "monitoring jobs"
-
     while (get-job) {
         foreach ($job in get-job) {
-            if($detail) {
-                write-log -data ($job | fl * | out-string)
-            }
+            write-log -data $job
 
             if ($job.state -ine "running") {
-                write-log -data ($job | fl * | out-string) #-report $job.name
+                write-log -data $job
 
                 if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
-                    write-log -data "ERROR:$($job | fl * | out-string)" -report $job.name
+                    write-log -data $job -report $job.name
                 }
 
-                write-log -data ($job.output | fl * | out-string) -report $job.name
+                write-log -data $job -report $job.name
                 remove-job -Id $job.Id -Force  
             }
             else {
@@ -60,6 +57,7 @@ function monitor-jobs() {
                     write-log -data $jobInfo -report $job.name
                 }
             }
+
             start-sleep -Seconds $sleepSeconds
         }
     }
@@ -144,22 +142,37 @@ function set-nodeName($nodeName = $env:COMPUTERNAME) {
 
 function write-log($data, $report) {
     if (!$data) { return }
-    $data = "$(get-date):$data"
+    [string]$stringData = ""
     $sendReport = ($detail -imatch "true") -and $report
     $level = "Ok"
 
-    if ($sendReport -and $data -imatch "error") {
-        write-error $data
-        $level = "Error"
-        $sendReport = $true
+    if($data.GetType().Name -eq "PSRemotingJob") {
+        foreach($job in $data.childjobs){
+            $stringData += "name: $($data.Name) state: $($job.State) status: $($job.Status)"
+
+            if($job.Output) {
+                $level = "Ok"
+                $stringData += (@($job.Output.ReadAll()) -join "`r`n")
+            }
+            if($job.Warning) {
+                write-warning (@($job.Warning.ReadAll()) -join "`r`n")
+                $level = "Warning"
+                $sendReport = $true
+                $stringData += (@($job.Warning.ReadAll()) -join "`r`n")
+            }
+            if($job.Error) {
+                write-error (@($job.Error.ReadAll()) -join "`r`n")
+                $level = "Error"
+                $sendReport = $true
+                $stringData += (@($job.Error.ReadAll()) -join "`r`n")
+            }
+        }
     }
-    elseif ($sendReport -and $data -imatch "warning") {
-        write-warning $data
-        $level = "Warning"
-        $sendReport = $true
+    else {
+        $stringData = "$(get-date):$($data | fl * | out-string)"
     }
 
-    write-host "$level : $sendReport : $report : $data`r`n"
+    write-host "$level : $sendReport : $report : $stringData`r`n"
 
     if ($sendReport) {
         try {
@@ -174,7 +187,7 @@ function write-log($data, $report) {
                 -HealthState $level 
                 -SourceId $source 
                 -HealthProperty $report 
-                -Description `"$data`r`n`""
+                -Description `"$stringData`r`n`""
                 
             Send-ServiceFabricNodeHealthReport -NodeName $nodeName `
                 -RemoveWhenExpired `
@@ -182,7 +195,7 @@ function write-log($data, $report) {
                 -HealthState $level `
                 -SourceId $source `
                 -HealthProperty $report `
-                -Description "$data"
+                -Description "$stringData"
         }
         catch {
             write-host "error sending report: $(($error | out-string))"
