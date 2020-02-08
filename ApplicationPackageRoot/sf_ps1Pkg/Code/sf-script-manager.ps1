@@ -5,8 +5,8 @@ param(
     [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0],
     [string]$detail = $env:detail,
     [int]$timeToLiveMinutes = ($env:timeToLiveMinutes, 60 -ne $null)[0],
-    [datetime]$scriptStartDateTimeUtc = $env:scriptStartDateTimeUtc,
-    [int]$scriptReccurrenceMinutes = $env:scriptReccurrenceMinutes
+    [datetime]$scriptStartDateTimeUtc = ($env:scriptStartDateTimeUtc, (get-date).ToUniversalTime() -ne $null)[0],
+    [int]$scriptReccurrenceMinutes = ($env:scriptReccurrenceMinutes, 0 -ne $null)[0]
 )
 
 $error.Clear()
