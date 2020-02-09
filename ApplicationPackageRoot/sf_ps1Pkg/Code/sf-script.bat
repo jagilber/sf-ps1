@@ -11,12 +11,13 @@ set scriptManagerFile=%cd%\sf-script-manager.ps1
 
 if "%1"=="setupentrypoint" (
 	echo setupentrypoint
-	powershell.exe -nologo -noprofile -file "%scriptManagerFile%" -scripts "%setupScripts%"
+	powershell.exe -executionPolicy Bypass -nologo -noprofile -file "%scriptManagerFile%" -scripts "%setupScripts%"
 )
 
 if "%1"=="entrypoint" (
-	powershell.exe -nologo -noprofile -file "%scriptManagerFile%" -scripts "%scripts%"
-	echo entrypoint, pausing
+	echo entrypoint
+	powershell.exe -executionPolicy Bypass -nologo -noprofile -file "%scriptManagerFile%" -scripts "%scripts%"
+	echo entrypoint pausing
 	pause
 )
 

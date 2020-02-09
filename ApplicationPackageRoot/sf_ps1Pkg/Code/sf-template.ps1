@@ -5,9 +5,7 @@
 [cmdletbinding()]
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
-    [int]$myErrorDescription = $env:myErrorDescription,
-    [int]$myWarningDescription = $env:myWarningDescription,
-    [int]$myDescription = $env:myDescription
+    [bool]$continuous = ($env:continuous, $true -ne $null)[0]
 )
 
 $ErrorActionPreference = "continue"
@@ -15,29 +13,32 @@ $error.clear()
 
 function main() {
     try {
-        while ($true) {
+        do {
             $timer = get-date
-            write-host "$($MyInvocation.ScriptName)`r`n$myDescription`r`n" -ForegroundColor green
+            write-host "$(get-date) $($MyInvocation.ScriptName)`r`n" -ForegroundColor green
 
             {{my code}}
 
             if ({{my error condition}} -or $error) {
-                write-error "ERROR:$myErrorDescription`r`n"
-                write-host "$($error | out-string)`r`n" -ForegroundColor red
+                write-error "$(get-date) $($error | out-string)"
+                $error.Clear()
             }
-            elseif ({{my warning condition}}) {
-                write-warning "WARNING:$myWarningDescription`r`n"
+            
+            if ({{my warning condition}}) {
+                write-warning "WARNING:$(get-date)`r`n"
             }
 
-            write-host "sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
-            write-host "$(get-date) timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
+            write-host "timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
+            write-host "$(get-date) sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
             start-sleep -Seconds ($sleepMinutes * 60)
         }
+        while ($continuous) 
     }
     catch {
-        write-error "exception:$($_ | out-string)"
-        write-error "$($error | out-string)"
+        write-error "exception:$(get-date) $($_ | out-string)"
+        write-error "$(get-date) $($error | out-string)"
 	}
 }
 
+write-host "$($psboundparameters | fl * | out-string)`r`n" -ForegroundColor green
 main
