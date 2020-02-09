@@ -90,8 +90,10 @@ function wait-command($minutes = $sleepMinutes) {
 function stop-command() {
     write-host "$(get-date) stopping existing trace`r`n" -ForegroundColor green
     #high cpu
-    write-host "wpr.exe -stop $outputfile $([io.path]::getfilenamewithoutextension($MyInvocation.ScriptName))"
-    wpr.exe -stop $outputfile $([io.path]::getFileNameWithoutExtension($MyInvocation.ScriptName))
+    if(![regex]::IsMatch((wpr -status),"WPR is not recording")) {
+        write-host "wpr.exe -stop $outputfile $([io.path]::getfilenamewithoutextension($MyInvocation.ScriptName))"
+        wpr.exe -stop $outputfile $([io.path]::getFileNameWithoutExtension($MyInvocation.ScriptName))
+    }
 
 }
 

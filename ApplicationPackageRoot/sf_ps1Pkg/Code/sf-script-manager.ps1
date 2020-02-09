@@ -5,9 +5,10 @@ param(
     [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0],
     [string]$detail = $env:detail,
     [string]$runOnNodes = $env:runOnNodes,
-    [int]$timeToLiveMinutes = ($env:timeToLiveMinutes, 60 -ne $null)[0],
+    [int]$reportTimeToLiveMinutes = ($env:reportTimeToLiveMinutes, 60 -ne $null)[0],
     [datetime]$scriptStartDateTimeUtc = ($env:scriptStartDateTimeUtc, (get-date).ToUniversalTime() -ne $null)[0],
-    [int]$scriptRecurrenceMinutes = ($env:scriptRecurrenceMinutes, 0 -ne $null)[0]
+    [int]$scriptRecurrenceMinutes = ($env:scriptRecurrenceMinutes, 0 -ne $null)[0],
+    [bool]$doNotReturn = ($env:doNotReturn, $false -ne $null)[0]
 )
 
 $error.Clear()
@@ -16,10 +17,15 @@ $global:scriptCommands = @($scripts.Split(';'))
 $global:nodes = @($runOnNodes.Split(','))
 $nodeName = $env:Fabric_NodeName
 $source = $env:Fabric_ServiceName
+$global:scriptName = $null
+$global:scriptParams = ($psboundparameters | out-string)
 
 function main() {
     try {
-        write-log "starting"
+        set-location $psscriptroot
+        $global:scriptName = [io.path]::getFileName($MyInvocation.ScriptName)
+        write-log "starting $global:ScriptName $global:scriptParams" -report $global:scriptName
+
         if (!$nodeName) { $nodeName = set-nodeName }
         if (!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
 
@@ -30,7 +36,7 @@ function main() {
 
         if(!$env:Path.Contains($pwd)) {
             $env:Path += ";$pwd"
-            write-host "$(get-date) new path $env:Path" -ForegroundColor Green
+            write-host "new path $env:Path" -ForegroundColor Green
         }
 
         connect-serviceFabricCluster
@@ -38,9 +44,9 @@ function main() {
 
         if ($scriptStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
             $totalSeconds = ([datetime]($scriptStartDateTimeUtc.Ticks - (get-date).ToUniversalTime().Ticks)).Second
-            write-log "waiting $totalSeconds seconds for starttime: $scriptStartDateTimeUtc"
+            write-log "waiting $totalSeconds seconds for starttime: $scriptStartDateTimeUtc" -report $global:scriptName
             Start-Sleep -Seconds $totalSeconds
-            write-log "resuming for starttime: $scriptStartDateTimeUtc"
+            write-log "resuming for starttime: $scriptStartDateTimeUtc" -report $global:scriptName
         }
 
         start-jobs
@@ -52,32 +58,40 @@ function main() {
                 $recurrenceStartDateTimeUtc = $recurrenceStartDateTimeUtc.addMinutes($scriptRecurrenceMinutes)
                 if ($recurrenceStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
                     $totalSeconds = ([datetime]($recurrenceStartDateTimeUtc.Ticks - (get-date).ToUniversalTime().Ticks)).Second
-                    write-log "waiting $totalSeconds seconds for recurrencetime: $scriptStartDateTimeUtc"
+                    write-log "waiting $totalSeconds seconds for recurrencetime: $scriptStartDateTimeUtc" -report $global:scriptName
                     Start-Sleep -Seconds $totalSeconds
-                    write-log "resuming for recurrence: $scriptStartDateTimeUtc"
+                    write-log "resuming for recurrence: $scriptStartDateTimeUtc" -report $global:scriptName
                 }
-
+                
+                write-log "starting jobs for recurrence: $scriptStartDateTimeUtc" -report $global:scriptName
                 start-jobs
                 wait-jobs
             }
         }
+
+        if($doNotReturn) {
+            write-log "pausing: $scriptStartDateTimeUtc" -report $global:scriptName
+            while($true) {
+                start-sleep -seconds $sleepSeconds
+            }
+        }
     }
     catch {
-        write-log "error: $($_ | out-string)"
+        write-log "error: $($_ | out-string)" -report $global:scriptName
         write-error ($error | out-string)
     }
     finally {
         remove-jobs
-        write-log "finished"
+        write-log "finished: " -report $global:scriptName
         exit
     }
 }
 
 function remove-jobs() {
-    write-log "removing jobs"
     try {
         foreach ($job in get-job) {
-            write-log "removing job $($job.Name)"
+            write-log "removing job $($job.Name)" -report $global:scriptName
+            write-log $job -report $global:scriptName
             $job.StopJob()
             Remove-Job $job -Force
         }
@@ -111,7 +125,7 @@ function set-nodeName($nodeName = $env:COMPUTERNAME) {
 }
 
 function start-jobs() {
-    write-log "start jobs scripts count: $($scripts.Count)"
+    write-log "starting jobs: $scriptStartDateTimeUtc" -report $global:scriptName
 
     if(!$global:scriptCommands) {
         write-error "no scripts to execute. exiting"
@@ -140,7 +154,8 @@ function start-jobs() {
         }
 
         $scriptFile = resolve-path $scriptFile
-        write-log "starting $scriptFile $scriptArgs"
+        write-log "starting job $($job.Name)  $scriptFile $scriptArgs" -report $global:scriptName
+        write-log $job -report $global:scriptName
         start-job -Name $scriptFileName -ArgumentList @($scriptFile, $scriptArgs) -scriptblock { 
             param($scriptFile, $scriptArgs)
             write-host "$scriptFile $scriptArgs"
@@ -156,10 +171,16 @@ function start-jobs() {
 }
 
 function wait-jobs() {
-    write-log -data "monitoring jobs"
+    write-log "monitoring jobs: $scriptStartDateTimeUtc" -report $global:scriptName
     while (get-job) {
         foreach ($job in get-job) {
-            write-log -data $job
+            $jobInfo = (receive-job -Id $job.id)
+            if ($jobInfo) {
+                write-log -data $jobInfo -report $job.name
+            }
+            else {
+                write-log -data $job            
+            }
 
             if ($job.state -ine "running") {
                 write-log -data $job
@@ -171,16 +192,12 @@ function wait-jobs() {
                 write-log -data $job -report $job.name
                 remove-job -Id $job.Id -Force  
             }
-            else {
-                $jobInfo = (receive-job -Id $job.id)
-                if ($jobInfo) {
-                    write-log -data $jobInfo -report $job.name
-                }
-            }
 
             start-sleep -Seconds $sleepSeconds
         }
     }
+
+    write-log "finished jobs: $scriptStartDateTimeUtc" -report $global:scriptName
 }
 
 function write-log($data, $report) {
@@ -188,13 +205,15 @@ function write-log($data, $report) {
     [string]$stringData = ""
     $sendReport = ($detail -imatch "true") -and $report
     $level = "Ok"
+    $jobName = $null
 
     if($data.GetType().Name -eq "PSRemotingJob") {
+        $jobName = $data.Name
         foreach($job in $data.childjobs){
-            $stringData += "name: $($data.Name) state: $($job.State) status: $($job.Status)"
-
+            if($job.Information) {
+                $stringData += (@($job.Information.ReadAll()) -join "`r`n")
+            }
             if($job.Output) {
-                $level = "Ok"
                 $stringData += (@($job.Output.ReadAll()) -join "`r`n")
             }
             if($job.Warning) {
@@ -202,12 +221,21 @@ function write-log($data, $report) {
                 $level = "Warning"
                 $sendReport = $true
                 $stringData += (@($job.Warning.ReadAll()) -join "`r`n")
+                $stringData += ($job | fl * | out-string)
             }
             if($job.Error) {
                 write-error (@($job.Error.ReadAll()) -join "`r`n")
                 $level = "Error"
                 $sendReport = $true
                 $stringData += (@($job.Error.ReadAll()) -join "`r`n")
+                $stringData += ($job | fl * | out-string)
+            }
+
+            if($stringData.Trim().Length -gt 0) {
+                $stringData += "`r`nname: $($data.Name) state: $($job.State) $($job.Status)`r`n"     
+            }
+            else{
+                return     
             }
         }
     }
@@ -215,17 +243,17 @@ function write-log($data, $report) {
         $stringData = "$(get-date):$($data | fl * | out-string)"
     }
 
-    write-host "$level : $sendReport : $report : $stringData`r`n"
+    write-host "level: $level sendreport: $sendReport report: $report data: $stringData`r`n"
 
     if ($sendReport) {
         try {
             if (!(get-serviceFabricClusterConnection)) { connect-servicefabriccluster }
             $error.clear()
 
-            if (!$report) { $report = $MyInvocation.ScriptName }
+            if (!$report) { $report = ($jobName, $global:scriptName -ne $null)[0] }
             write-host "Send-ServiceFabricNodeHealthReport 
                 -RemoveWhenExpired
-                -TimeToLiveSec $($timeToLiveMinutes * 60)
+                -TimeToLiveSec $($reportTimeToLiveMinutes * 60)
                 -NodeName $nodeName 
                 -HealthState $level 
                 -SourceId $source 
@@ -234,7 +262,7 @@ function write-log($data, $report) {
                 
             Send-ServiceFabricNodeHealthReport -NodeName $nodeName `
                 -RemoveWhenExpired `
-                -TimeToLiveSec ($timeToLiveMinutes * 60) `
+                -TimeToLiveSec ($reportTimeToLiveMinutes * 60) `
                 -HealthState $level `
                 -SourceId $source `
                 -HealthProperty $report `
@@ -248,7 +276,7 @@ function write-log($data, $report) {
     }
 }
 
-write-log ($psboundparameters | out-string)
+
 # execute script
 main
 #

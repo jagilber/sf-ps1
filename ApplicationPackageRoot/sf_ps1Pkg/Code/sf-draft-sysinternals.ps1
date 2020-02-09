@@ -51,7 +51,7 @@ function main() {
 
         $error.Clear()
         write-host "$(get-date) starting $sysinternalsExe $sysinternalsExeStartCommand" -ForegroundColor Green
-        $process = start-process -PassThru -NoNewWindow -FilePath $sysinternalsexe -ArgumentList $sysinternalsExeStartCommand
+        $process = start-process -PassThru -FilePath $sysinternalsexe -ArgumentList $sysinternalsExeStartCommand
         write-host "$(get-date) starting process info: $($process | fl * | out-string)" -ForegroundColor Green
 
         if($error -or !$process -or $process.ExitCode)
@@ -72,12 +72,15 @@ function main() {
 
         if($sysinternalsExeStopCommand) {
             write-host "$(get-date) stopping $sysinternalsExe $sysinternalsExeStopCommand" -ForegroundColor Green
-            $process = start-process -PassThru -NoNewWindow -FilePath $sysinternalsexe -ArgumentList $sysinternalsExeStopCommand
+            $process = start-process -PassThru -FilePath $sysinternalsexe -ArgumentList $sysinternalsExeStopCommand
             write-host "$(get-date) stopping process info: $($process | fl * | out-string)" -ForegroundColor Green
         }
         else {
             write-host "$(get-date) killing $sysinternalsExe" -ForegroundColor Green
-            stop-process -Id $process.Id -Force
+            #stop-process -Id $process.Id -Force
+            # procdump wants ctrl-c to detach
+            $process.CloseMainWindow()
+            
             write-host "$(get-date) killing process info: $($process | fl * | out-string)" -ForegroundColor Green
             if($removeAllSysinternalInstances) {
                 $wildName = "$([io.path]::GetFileNameWithoutExtension($sysinternalsexe))*"

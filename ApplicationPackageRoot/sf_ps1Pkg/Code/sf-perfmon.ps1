@@ -17,6 +17,7 @@ $error.clear()
 function main() {
     try {
         do {
+            set-location $psscriptroot
             $timer = get-date
             write-host "$(get-date) $($MyInvocation.ScriptName)`r`n" -ForegroundColor green
             $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
