@@ -5,9 +5,6 @@
 [cmdletbinding()]
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
-    [int]$myErrorDescription = ($env:myErrorDescription, "" -ne $null)[0],
-    [int]$myWarningDescription = ($env:myWarningDescription, "" -ne $null)[0],
-    [int]$myDescription = ($env:myDescription, "" -ne $null)[0],
     [bool]$continuous = ($env:continuous, $true -ne $null)[0]
 )
 
@@ -18,21 +15,21 @@ function main() {
     try {
         do {
             $timer = get-date
-            write-host "$(get-date) $($MyInvocation.ScriptName)`r`n$myDescription`r`n" -ForegroundColor green
+            write-host "$(get-date) $($MyInvocation.ScriptName)`r`n" -ForegroundColor green
 
             {{my code}}
 
             if ({{my error condition}} -or $error) {
-                write-error "ERROR:$(get-date) $myErrorDescription`r`n"
-                write-host "$(get-date) $($error | out-string)`r`n" -ForegroundColor red
+                write-error "$(get-date) $($error | out-string)"
+                $error.Clear()
             }
             
             if ({{my warning condition}}) {
-                write-warning "WARNING:$(get-date) $myWarningDescription`r`n"
+                write-warning "WARNING:$(get-date)`r`n"
             }
 
-            write-host "$(get-date) sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
             write-host "timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
+            write-host "$(get-date) sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
             start-sleep -Seconds ($sleepMinutes * 60)
         }
         while ($continuous) 
