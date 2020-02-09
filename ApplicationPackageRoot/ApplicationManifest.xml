@@ -8,7 +8,7 @@
         use semicolon ';' to separate script commands if using multiple scripts.
         paths can be local or url.
         example:.\test2.ps1 -runMinutes 2;.\test.ps1 -totalMinutes 1;https://raw.githubusercontent.com/jagilber/sf-ps1/master/ApplicationPackageRoot/sf_ps1Pkg/Code/sf-netstat.ps1 -sleepMinutes 4
-        -->
+  -->
   <Parameters>
     <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-net-trace.ps1;.\sf-netstat.ps1" />
     <Parameter Name="sf_ps1_scriptStartDateTimeUtc" DefaultValue="" />
@@ -75,12 +75,11 @@
           RelativeFolderPath is the name if any of the subfolder in 'log' folder for application in _App folder on node  for upload
       -->
       <Destinations>
-        <!-- ConnectionString is storage account Access Keys connection string *without* EndpointSuffix
-              Should have:
+        <!-- ConnectionString is storage account Access Keys connection string *without* EndpointSuffix. container will be created automatically.
+             ConnectionString should only have the following specific properties:
                 DefaultEndpointsProtocol
                 AccountName
                 AccountKey
-            With correct permissions, container will be created if not exists
         -->
         <AzureBlob
             ConnectionString="[sf_ps1_storageKey]"

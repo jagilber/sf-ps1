@@ -24,7 +24,7 @@ function main() {
         if (!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }
 
         if(@($global:nodes) -and !$global:nodes.Contains($nodeName)) {
-            write-log "$nodeName not in list of runOnNodes $($runOnNodes | fl * | out-string)`r`nreturning"
+            write-log "$nodeName not in list of runOnNodes $runOnNodes`r`nreturning"
             return
         }
 
@@ -44,7 +44,7 @@ function main() {
         }
 
         start-jobs
-        monitor-jobs
+        wait-jobs
 
         if($scriptRecurrenceMinutes) {
             $recurrenceStartDateTimeUtc = $scriptStartDateTimeUtc
@@ -58,7 +58,7 @@ function main() {
                 }
 
                 start-jobs
-                monitor-jobs
+                wait-jobs
             }
         }
     }
@@ -70,34 +70,6 @@ function main() {
         remove-jobs
         write-log "finished"
         exit
-    }
-}
-
-function monitor-jobs() {
-    write-log -data "monitoring jobs"
-    while (get-job) {
-        foreach ($job in get-job) {
-            write-log -data $job
-
-            if ($job.state -ine "running") {
-                write-log -data $job
-
-                if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
-                    write-log -data $job -report $job.name
-                }
-
-                write-log -data $job -report $job.name
-                remove-job -Id $job.Id -Force  
-            }
-            else {
-                $jobInfo = (receive-job -Id $job.id)
-                if ($jobInfo) {
-                    write-log -data $jobInfo -report $job.name
-                }
-            }
-
-            start-sleep -Seconds $sleepSeconds
-        }
     }
 }
 
@@ -114,6 +86,28 @@ function remove-jobs() {
         write-log "error:$($Error | out-string)"
         $error.Clear()
     }
+}
+
+function set-nodeName($nodeName = $env:COMPUTERNAME) {
+    # base 36 -> base 10
+    $alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+    [long]$decimalNumber=0
+    $position=0
+    $base36Number = $nodeName.substring($nodeName.Length - 6).trimStart('0')
+    $name = "_$($nodeName.substring(0, $nodeName.Length - 6))_"
+
+    if (!$base36Number) { $base36Number = "0" }
+    $inputArray = $base36Number.toLower().toCharArray()
+    [array]::reverse($inputArray)
+
+    foreach ($character in $inputArray) {
+        $decimalNumber += $alphabet.IndexOf($character) * [long][Math]::Pow(36, $position)
+        $position++
+    }
+    
+    $nodeName = "$name$decimalNumber"
+    write-log "using nodename $nodeName"
+    return $nodeName
 }
 
 function start-jobs() {
@@ -152,33 +146,41 @@ function start-jobs() {
             write-host "$scriptFile $scriptArgs"
             invoke-expression -command "$scriptFile $scriptArgs"
 
-            # todo
-            #start-process -passthru -nonewwindow -verb RunAs -filePath "powershell.exe" -ArgumentList "$scriptFile $scriptArgs"
-            #start-process -passthru -nonewwindow -filePath "powershell.exe" -ArgumentList "$scriptFile $scriptArgs"
+            # todo?
+            #start-process -passthru -nonewwindow -verb RunAs -filePath "powershell.exe" -ArgumentList "-noninteractive -executionpolicy bypass -nologo -noprofile $scriptFile $scriptArgs"
+            #start-process -passthru -nonewwindow -filePath "powershell.exe" -ArgumentList "-noninteractive -executionpolicy bypass -nologo -noprofile $scriptFile $scriptArgs"
+            #start-process -passthru -nonewwindow -verb RunAs -filePath "powershell.exe" -ArgumentList " -executionpolicy bypass -nologo -noprofile $scriptFile $scriptArgs"
+            #start-process -passthru -nonewwindow -filePath "powershell.exe" -ArgumentList " -executionpolicy bypass -nologo -noprofile $scriptFile $scriptArgs"
         }
     }
 }
 
-function set-nodeName($nodeName = $env:COMPUTERNAME) {
-    # base 36 -> base 10
-    $alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
-    [long]$decimalNumber=0
-    $position=0
-    $base36Number = $nodeName.substring($nodeName.Length - 6).trimStart('0')
-    $name = "_$($nodeName.substring(0, $nodeName.Length - 6))_"
+function wait-jobs() {
+    write-log -data "monitoring jobs"
+    while (get-job) {
+        foreach ($job in get-job) {
+            write-log -data $job
 
-    if (!$base36Number) { $base36Number = "0" }
-    $inputArray = $base36Number.toLower().toCharArray()
-    [array]::reverse($inputArray)
+            if ($job.state -ine "running") {
+                write-log -data $job
 
-    foreach ($character in $inputArray) {
-        $decimalNumber += $alphabet.IndexOf($character) * [long][Math]::Pow(36, $position)
-        $position++
+                if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
+                    write-log -data $job -report $job.name
+                }
+
+                write-log -data $job -report $job.name
+                remove-job -Id $job.Id -Force  
+            }
+            else {
+                $jobInfo = (receive-job -Id $job.id)
+                if ($jobInfo) {
+                    write-log -data $jobInfo -report $job.name
+                }
+            }
+
+            start-sleep -Seconds $sleepSeconds
+        }
     }
-    
-    $nodeName = "$name$decimalNumber"
-    write-log "using nodename $nodeName"
-    return $nodeName
 }
 
 function write-log($data, $report) {

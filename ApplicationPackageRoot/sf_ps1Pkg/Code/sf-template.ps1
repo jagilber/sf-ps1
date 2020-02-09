@@ -5,9 +5,9 @@
 [cmdletbinding()]
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
-    [int]$myErrorDescription = $env:myErrorDescription,
-    [int]$myWarningDescription = $env:myWarningDescription,
-    [int]$myDescription = $env:myDescription,
+    [int]$myErrorDescription = ($env:myErrorDescription, "" -ne $null)[0],
+    [int]$myWarningDescription = ($env:myWarningDescription, "" -ne $null)[0],
+    [int]$myDescription = ($env:myDescription, "" -ne $null)[0],
     [bool]$continuous = ($env:continuous, $true -ne $null)[0]
 )
 
@@ -31,8 +31,8 @@ function main() {
                 write-warning "WARNING:$(get-date) $myWarningDescription`r`n"
             }
 
-            write-host "sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
-            write-host "$(get-date) timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
+            write-host "$(get-date) sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
+            write-host "timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
             start-sleep -Seconds ($sleepMinutes * 60)
         }
         while ($continuous) 
