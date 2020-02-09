@@ -7,7 +7,8 @@ param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
     [bool]$continuous = ($env:continuous, $false -ne $null)[0],
     [string]$outputFilePattern = ($env:outputFilePattern, "*.blg" -ne $null)[0],
-    [string]$outputFileDestination = ($env:outputDestination, "..\log" -ne $null)[0]
+    [string]$outputFileDestination = ($env:outputDestination, "..\log" -ne $null)[0],
+    [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0]
 )
 
 $ErrorActionPreference = "continue"
@@ -34,12 +35,12 @@ function main() {
 
             write-host "$(get-date) starting Perfmon"
             #long perf
-            write-host "logman create counter PerfLog-Long -o '$pwd\$env:computername-PerfLog-Long.blg' -f bincirc -v mmddhhmm -max 300 -c '\LogicalDisk(*)\*' '\Memory\*' '\.NET CLR Exceptions(*)\*' '\.NET CLR Memory(*)\*' '\Cache\*' '\Network Interface(*)\*' '\Netlogon(*)\*' '\Paging File(*)\*' '\PhysicalDisk(*)\*' '\Processor(*)\*' '\Processor Information(*)\*' '\Process(*)\*' '\Server\*' '\System\*' '\Server Work Queues(*)\*' -si 00:05:00"
-            logman create counter PerfLog-Long -o "$pwd\$env:computername-PerfLog-Long.blg" -f bincirc -v mmddhhmm -max 300 -c '\LogicalDisk(*)\*' '\Memory\*' '\.NET CLR Exceptions(*)\*' '\.NET CLR Memory(*)\*' '\Cache\*' '\Network Interface(*)\*' '\Netlogon(*)\*' '\Paging File(*)\*' '\PhysicalDisk(*)\*' '\Processor(*)\*' '\Processor Information(*)\*' '\Process(*)\*' '\Server\*' '\System\*' '\Server Work Queues(*)\*' -si 00:05:00
+            write-host "logman create counter PerfLog-Long -o '$pwd\$env:computername-PerfLog-Long.blg' -f bincirc -v mmddhhmm -max $maxSizeMb -c '\LogicalDisk(*)\*' '\Memory\*' '\.NET CLR Exceptions(*)\*' '\.NET CLR Memory(*)\*' '\Cache\*' '\Network Interface(*)\*' '\Netlogon(*)\*' '\Paging File(*)\*' '\PhysicalDisk(*)\*' '\Processor(*)\*' '\Processor Information(*)\*' '\Process(*)\*' '\Server\*' '\System\*' '\Server Work Queues(*)\*' -si 00:05:00"
+            logman create counter PerfLog-Long -o "$pwd\$env:computername-PerfLog-Long.blg" -f bincirc -v mmddhhmm -max $maxSizeMb -c '\LogicalDisk(*)\*' '\Memory\*' '\.NET CLR Exceptions(*)\*' '\.NET CLR Memory(*)\*' '\Cache\*' '\Network Interface(*)\*' '\Netlogon(*)\*' '\Paging File(*)\*' '\PhysicalDisk(*)\*' '\Processor(*)\*' '\Processor Information(*)\*' '\Process(*)\*' '\Server\*' '\System\*' '\Server Work Queues(*)\*' -si 00:05:00
 
             #short perf
-            write-host "logman create counter PerfLog-Short -o '$pwd\$env:computername-PerfLog-Short.blg' -f bincirc -v mmddhhmm -max 300 -c '\LogicalDisk(*)\*' '\Memory\*' '\.NET CLR Exceptions(*)\*' '\.NET CLR Memory(*)\*' '\Cache\*' '\Network Interface(*)\*' '\Netlogon(*)\*' '\Paging File(*)\*' '\PhysicalDisk(*)\*' '\Processor(*)\*' '\Processor Information(*)\*' '\Process(*)\*' '\Server\*' '\System\*' '\Server Work Queues(*)\*' -si 00:00:03"
-            logman create counter PerfLog-Short -o "$pwd\$env:computername-PerfLog-Short.blg" -f bincirc -v mmddhhmm -max 300 -c '\LogicalDisk(*)\*' '\Memory\*' '\.NET CLR Exceptions(*)\*' '\.NET CLR Memory(*)\*' '\Cache\*' '\Network Interface(*)\*' '\Netlogon(*)\*' '\Paging File(*)\*' '\PhysicalDisk(*)\*' '\Processor(*)\*' '\Processor Information(*)\*' '\Process(*)\*' '\Server\*' '\System\*' '\Server Work Queues(*)\*' -si 00:00:03
+            write-host "logman create counter PerfLog-Short -o '$pwd\$env:computername-PerfLog-Short.blg' -f bincirc -v mmddhhmm -max $maxSizeMb -c '\LogicalDisk(*)\*' '\Memory\*' '\.NET CLR Exceptions(*)\*' '\.NET CLR Memory(*)\*' '\Cache\*' '\Network Interface(*)\*' '\Netlogon(*)\*' '\Paging File(*)\*' '\PhysicalDisk(*)\*' '\Processor(*)\*' '\Processor Information(*)\*' '\Process(*)\*' '\Server\*' '\System\*' '\Server Work Queues(*)\*' -si 00:00:03"
+            logman create counter PerfLog-Short -o "$pwd\$env:computername-PerfLog-Short.blg" -f bincirc -v mmddhhmm -max $maxSizeMb -c '\LogicalDisk(*)\*' '\Memory\*' '\.NET CLR Exceptions(*)\*' '\.NET CLR Memory(*)\*' '\Cache\*' '\Network Interface(*)\*' '\Netlogon(*)\*' '\Paging File(*)\*' '\PhysicalDisk(*)\*' '\Processor(*)\*' '\Processor Information(*)\*' '\Process(*)\*' '\Server\*' '\System\*' '\Server Work Queues(*)\*' -si 00:00:03
             
             write-host "$(get-date) logman start PerfLog-Long"
             logman start PerfLog-Long

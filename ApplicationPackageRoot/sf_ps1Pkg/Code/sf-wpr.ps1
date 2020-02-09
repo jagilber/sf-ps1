@@ -1,13 +1,13 @@
 ###########################
-# sf-ps1 netsh network trace
+# sf-ps1 wpr windows performance recorder
 # 
 ###########################
 [cmdletbinding()]
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
     [bool]$continuous = ($env:continuous, $false -ne $null)[0],
-    [string]$outputFile = ($env:outputFile, "$pwd\$env:computername-net.$((get-date).tostring("MMddhhmmss")).etl" -ne $null)[0],
-    [string]$outputFilePattern = ($env:outputFilePattern, "*net.*.etl" -ne $null)[0],
+    [string]$outputFile = ($env:outputFile, "$pwd\$env:computername-wpr.$((get-date).tostring("MMddhhmmss")).etl" -ne $null)[0],
+    [string]$outputFilePattern = ($env:outputFilePattern, "*wpr.*.etl" -ne $null)[0],
     [string]$outputFileDestination = ($env:outputFileDestination, "..\log" -ne $null)[0],
     [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0]
 )
@@ -89,12 +89,17 @@ function wait-command($minutes = $sleepMinutes) {
 
 function stop-command() {
     write-host "$(get-date) stopping existing trace`r`n" -ForegroundColor green
-    netsh trace stop
+    #high cpu
+    write-host "wpr.exe -stop $outputfile $([io.path]::getfilenamewithoutextension($MyInvocation.ScriptName))"
+    wpr.exe -stop $outputfile $([io.path]::getFileNameWithoutExtension($MyInvocation.ScriptName))
+
 }
 
 function start-command() {
     write-host "$(get-date) starting trace" -ForegroundColor green
-    netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb traceFile=$outputFile filemode=circular
+    #high cpu
+    write-host "$(get-date) starting wpr.exe -start CPU -start DiskIO -start FileIO -start Network -start Handle -start HTMLActivity -start HTMLResponsiveness -start DotNET -filemode -recordtempto $pwd"
+    wpr.exe -start CPU -start DiskIO -start FileIO -start Network -start Handle -start HTMLActivity -start HTMLResponsiveness -start DotNET -filemode -recordtempto $pwd
 }
 
 main
