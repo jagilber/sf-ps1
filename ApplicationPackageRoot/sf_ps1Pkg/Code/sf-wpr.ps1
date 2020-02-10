@@ -26,6 +26,7 @@ function main() {
 
             # remove existing trace
             stop-command
+            check-error
 
             # start new trace
             start-command
@@ -92,24 +93,24 @@ function wait-command($minutes = $sleepMinutes) {
 function stop-command() {
     write-host "$(get-date) stopping existing trace`r`n" -ForegroundColor green
     #high cpu
-    write-host "$(get-date) stopbefore:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)|(There are no trace profiles running.)'))`r`n$(wpr -status)"
-    if(!([regex]::IsMatch((wpr -status),"(WPR is not recording)|(There are no trace profiles running.)", [text.RegularExpressions.RegexOptions]::Singleline -bor [text.RegularExpressions.RegexOptions]::IgnoreCase))) {
+    write-host "$(get-date) stopbefore:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)'))`r`n$(wpr -status)"
+    if(!([regex]::IsMatch((wpr -status),"(WPR is not recording)"))) {
         $error.Clear()
         write-host "wpr.exe -stop $outputfile $([io.path]::getfilenamewithoutextension($MyInvocation.ScriptName))"
         wpr.exe -stop $outputfile ([io.path]::getFileNameWithoutExtension($MyInvocation.ScriptName))
         $error.Clear()
     }
-    write-host "$(get-date) stopafter:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)|(There are no trace profiles running.)'))`r`n$(wpr -status)"
+    write-host "$(get-date) stopafter:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)'))`r`n$(wpr -status)"
 }
 
 function start-command() {
     write-host "$(get-date) starting trace" -ForegroundColor green
     #high cpu
-    write-host "$(get-date) startbefore:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)|(There are no trace profiles running.)'))`r`n$(wpr -status)"
+    write-host "$(get-date) startbefore:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)'))`r`n$(wpr -status)"
 
     write-host "wpr.exe -start CPU -start DiskIO -start FileIO -start Network -start Handle -start HTMLActivity -start HTMLResponsiveness -start DotNET -filemode -recordtempto $pwd"
     wpr.exe -start CPU -start DiskIO -start FileIO -start Network -start Handle -start HTMLActivity -start HTMLResponsiveness -start DotNET -filemode -recordtempto $pwd
-    write-host "$(get-date) startafter:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)|(There are no trace profiles running.)'))`r`n$(wpr -status)"
+    write-host "$(get-date) startafter:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)'))`r`n$(wpr -status)"
 }
 
 main

@@ -41,7 +41,7 @@ function main() {
 
         if(@($global:nodes) -and !$global:nodes.Contains($nodeName)) {
             write-log "$nodeName not in list of runOnNodes $runOnNodes`r`nreturning"
-            return
+            pause-return
         }
 
         if(!$env:Path.Contains($pwd)) {
@@ -52,9 +52,11 @@ function main() {
         remove-jobs
 
         if ($scriptStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
-            $totalSeconds = ([datetime]($scriptStartDateTimeUtc.Ticks - (get-date).ToUniversalTime().Ticks)).Second
             write-log "waiting $totalSeconds seconds for starttime: $scriptStartDateTimeUtc" -report $global:scriptName
-            Start-Sleep -Seconds $totalSeconds
+            while ($scriptStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
+                $totalSeconds = ([datetime]($scriptStartDateTimeUtc.Ticks - (get-date).ToUniversalTime().Ticks)).Second
+                Start-Sleep -Seconds $totalSeconds
+            }
             write-log "resuming for starttime: $scriptStartDateTimeUtc" -report $global:scriptName
         }
 
@@ -78,12 +80,7 @@ function main() {
             }
         }
 
-        if($doNotReturn) {
-            write-log "pausing: $scriptStartDateTimeUtc" -report $global:scriptName
-            while($true) {
-                start-sleep -seconds $sleepSeconds
-            }
-        }
+        pause-return
     }
     catch {
         write-log "error: $($_ | out-string)" -report $global:scriptName
@@ -108,6 +105,15 @@ function remove-jobs() {
     catch {
         write-log "error:$($Error | out-string)"
         $error.Clear()
+    }
+}
+
+function pause-return(){
+    if($doNotReturn) {
+        write-log "pausing: $scriptStartDateTimeUtc" -report $global:scriptName
+        while($true) {
+            start-sleep -seconds $sleepSeconds
+        }
     }
 }
 
