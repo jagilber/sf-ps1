@@ -8,7 +8,7 @@ param(
     [int]$reportTimeToLiveMinutes = ($env:reportTimeToLiveMinutes, 60 -ne $null)[0],
     [datetime]$scriptStartDateTimeUtc = ($env:scriptStartDateTimeUtc, (get-date).ToUniversalTime() -ne $null)[0],
     [int]$scriptRecurrenceMinutes = ($env:scriptRecurrenceMinutes, 0 -ne $null)[0],
-    [bool]$doNotReturn = ($env:doNotReturn, $false -ne $null)[0]
+    [switch]$doNotReturn
 )
 
 $error.Clear()
@@ -19,11 +19,21 @@ $nodeName = $env:Fabric_NodeName
 $source = $env:Fabric_ServiceName
 $global:scriptName = $null
 $global:scriptParams = ($psboundparameters | out-string)
+$global:sfClientAvailable = $false
 
 function main() {
+    if(connect-serviceFabricCluster) { 
+        $global:sfClientAvailable = $true
+    }
+    else {
+        Write-Warning "sfclient unavailable"
+    }
+
     try {
-        set-location $psscriptroot
+        #set-location $psscriptroot
         $global:scriptName = [io.path]::getFileName($MyInvocation.ScriptName)
+        
+       
         write-log "starting $global:ScriptName $global:scriptParams" -report $global:scriptName
 
         if (!$nodeName) { $nodeName = set-nodeName }
@@ -39,7 +49,6 @@ function main() {
             write-host "new path $env:Path" -ForegroundColor Green
         }
 
-        connect-serviceFabricCluster
         remove-jobs
 
         if ($scriptStartDateTimeUtc.Ticks -gt (get-date).ToUniversalTime().Ticks) {
@@ -158,14 +167,8 @@ function start-jobs() {
         write-log $job -report $global:scriptName
         start-job -Name $scriptFileName -ArgumentList @($scriptFile, $scriptArgs) -scriptblock { 
             param($scriptFile, $scriptArgs)
-            write-host "$scriptFile $scriptArgs"
+            write-host "start-job:$scriptFile $scriptArgs"
             invoke-expression -command "$scriptFile $scriptArgs"
-
-            # todo?
-            #start-process -passthru -nonewwindow -verb RunAs -filePath "powershell.exe" -ArgumentList "-noninteractive -executionpolicy bypass -nologo -noprofile $scriptFile $scriptArgs"
-            #start-process -passthru -nonewwindow -filePath "powershell.exe" -ArgumentList "-noninteractive -executionpolicy bypass -nologo -noprofile $scriptFile $scriptArgs"
-            #start-process -passthru -nonewwindow -verb RunAs -filePath "powershell.exe" -ArgumentList " -executionpolicy bypass -nologo -noprofile $scriptFile $scriptArgs"
-            #start-process -passthru -nonewwindow -filePath "powershell.exe" -ArgumentList " -executionpolicy bypass -nologo -noprofile $scriptFile $scriptArgs"
         }
     }
 }
@@ -179,7 +182,7 @@ function wait-jobs() {
                 write-log -data $jobInfo -report $job.name
             }
             else {
-                write-log -data $job            
+                write-log -data $job
             }
 
             if ($job.state -ine "running") {
@@ -192,6 +195,12 @@ function wait-jobs() {
                 write-log -data $job -report $job.name
                 remove-job -Id $job.Id -Force  
             }
+#            else {
+#                $jobInfo = (receive-job -Id $job.id)
+#                if ($jobInfo) {
+#                    write-log -data $jobInfo -report $job.name
+#                }
+#            }
 
             start-sleep -Seconds $sleepSeconds
         }
@@ -235,7 +244,7 @@ function write-log($data, $report) {
                 $stringData += "`r`nname: $($data.Name) state: $($job.State) $($job.Status)`r`n"     
             }
             else{
-                return     
+                return
             }
         }
     }
@@ -244,8 +253,13 @@ function write-log($data, $report) {
     }
 
     write-host "level: $level sendreport: $sendReport report: $report data: $stringData`r`n"
+    if($global:sfClientAvailable) {
+        # todo: test
+        out-file -FilePath "..\log\$global:scriptName.log" -InputObject $stringData -Append
+        # end test
+    }
 
-    if ($sendReport) {
+    if ($sendReport -and $global:sfClientAvailable) {
         try {
             if (!(get-serviceFabricClusterConnection)) { connect-servicefabriccluster }
             $error.clear()

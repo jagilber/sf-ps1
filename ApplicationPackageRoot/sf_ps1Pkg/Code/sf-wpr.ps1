@@ -6,8 +6,8 @@
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
     [bool]$continuous = ($env:continuous, $false -ne $null)[0],
-    [string]$outputFile = ($env:outputFile, "$pwd\$env:computername-wpr.$((get-date).tostring("MMddhhmmss")).etl" -ne $null)[0],
-    [string]$outputFilePattern = ($env:outputFilePattern, "*wpr.*.etl" -ne $null)[0],
+    [string]$outputFile = ($env:outputFile, "$env:computername-wpr.$((get-date).tostring("MMddhhmmss")).etl" -ne $null)[0],
+    [string]$outputFilePattern = ($env:outputFilePattern, "*wpr.*.etl*" -ne $null)[0],
     [string]$outputFileDestination = ($env:outputFileDestination, "..\log" -ne $null)[0],
     [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0]
 )
@@ -18,6 +18,7 @@ write-host "$($psboundparameters | fl * | out-string)`r`n" -ForegroundColor gree
 function main() {
     try{
         do {
+            #set-location $psscriptroot
             $error.clear()
             $timer = get-date
             write-host "$($MyInvocation.ScriptName)`r`n$psboundparameters`r`n"
@@ -49,7 +50,7 @@ function main() {
     }
 }
 
-function copy-files($source = "$pwd\$outputFilePattern", $destination = $outputFileDestination) {
+function copy-files($source = $outputFilePattern, $destination = $outputFileDestination) {
     if($destination) {
         write-host "$(get-date) moving files $source to $destination"
         if(!(test-path $destination) -and !(new-item -Path $destination -ItemType Directory)) {
@@ -75,6 +76,7 @@ function check-admin() {
 function check-error() {
     if ($error) {
         write-error "$(get-date) $($error | fl * | out-string)"
+        write-host "$(get-date) $($error | fl * | out-string)"
         $error.Clear()
     }
 }
@@ -90,18 +92,24 @@ function wait-command($minutes = $sleepMinutes) {
 function stop-command() {
     write-host "$(get-date) stopping existing trace`r`n" -ForegroundColor green
     #high cpu
-    if(![regex]::IsMatch((wpr -status),"WPR is not recording")) {
+    write-host "$(get-date) stopbefore:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)|(There are no trace profiles running.)'))`r`n$(wpr -status)"
+    if(!([regex]::IsMatch((wpr -status),"(WPR is not recording)|(There are no trace profiles running.)", [text.RegularExpressions.RegexOptions]::Singleline -bor [text.RegularExpressions.RegexOptions]::IgnoreCase))) {
+        $error.Clear()
         write-host "wpr.exe -stop $outputfile $([io.path]::getfilenamewithoutextension($MyInvocation.ScriptName))"
-        wpr.exe -stop $outputfile $([io.path]::getFileNameWithoutExtension($MyInvocation.ScriptName))
+        wpr.exe -stop $outputfile ([io.path]::getFileNameWithoutExtension($MyInvocation.ScriptName))
+        $error.Clear()
     }
-
+    write-host "$(get-date) stopafter:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)|(There are no trace profiles running.)'))`r`n$(wpr -status)"
 }
 
 function start-command() {
     write-host "$(get-date) starting trace" -ForegroundColor green
     #high cpu
-    write-host "$(get-date) starting wpr.exe -start CPU -start DiskIO -start FileIO -start Network -start Handle -start HTMLActivity -start HTMLResponsiveness -start DotNET -filemode -recordtempto $pwd"
+    write-host "$(get-date) startbefore:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)|(There are no trace profiles running.)'))`r`n$(wpr -status)"
+
+    write-host "wpr.exe -start CPU -start DiskIO -start FileIO -start Network -start Handle -start HTMLActivity -start HTMLResponsiveness -start DotNET -filemode -recordtempto $pwd"
     wpr.exe -start CPU -start DiskIO -start FileIO -start Network -start Handle -start HTMLActivity -start HTMLResponsiveness -start DotNET -filemode -recordtempto $pwd
+    write-host "$(get-date) startafter:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)|(There are no trace profiles running.)'))`r`n$(wpr -status)"
 }
 
 main
