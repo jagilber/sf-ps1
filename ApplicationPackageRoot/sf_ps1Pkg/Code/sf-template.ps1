@@ -10,8 +10,6 @@ param(
 
 $ErrorActionPreference = "continue"
 $error.clear()
-# include functions
-. .\functions.ps1
 
 function main() {
     try {

@@ -21,13 +21,10 @@ write-host "$(get-date) `r`n$psboundparameters"
 
 $ErrorActionPreference = "continue"
 $error.clear()
-# include functions
-. .\functions.ps1
-
 
 function main() {
     try {
-        $startTimer = get-date
+        $timer = get-date
         $process = $null
         write-host "$($MyInvocation.ScriptName)`r`n$($psboundparameters | out-string) : $myDescription`r`n" -ForegroundColor Green
 
@@ -54,7 +51,7 @@ function main() {
 
         $error.Clear()
         write-host "$(get-date) starting $sysinternalsExe $sysinternalsExeStartCommand" -ForegroundColor Green
-        $process = start-process -PassThru -NoNewWindow -FilePath $sysinternalsexe -ArgumentList $sysinternalsExeStartCommand
+        $process = start-process -PassThru -FilePath $sysinternalsexe -ArgumentList $sysinternalsExeStartCommand
         write-host "$(get-date) starting process info: $($process | fl * | out-string)" -ForegroundColor Green
 
         if($error -or !$process -or $process.ExitCode)
@@ -75,12 +72,15 @@ function main() {
 
         if($sysinternalsExeStopCommand) {
             write-host "$(get-date) stopping $sysinternalsExe $sysinternalsExeStopCommand" -ForegroundColor Green
-            $process = start-process -PassThru -NoNewWindow -FilePath $sysinternalsexe -ArgumentList $sysinternalsExeStopCommand
+            $process = start-process -PassThru -FilePath $sysinternalsexe -ArgumentList $sysinternalsExeStopCommand
             write-host "$(get-date) stopping process info: $($process | fl * | out-string)" -ForegroundColor Green
         }
         else {
             write-host "$(get-date) killing $sysinternalsExe" -ForegroundColor Green
-            stop-process -Id $process.Id -Force
+            #stop-process -Id $process.Id -Force
+            # procdump wants ctrl-c to detach
+            $process.CloseMainWindow()
+            
             write-host "$(get-date) killing process info: $($process | fl * | out-string)" -ForegroundColor Green
             if($removeAllSysinternalInstances) {
                 $wildName = "$([io.path]::GetFileNameWithoutExtension($sysinternalsexe))*"
@@ -93,7 +93,7 @@ function main() {
         copy-item $outputFilePattern $outputFileDestination
 
         write-host "$(get-date) finished" -ForegroundColor Green
-        write-host "$(get-date) timer: $(((get-date) - $startTimer).tostring())" -ForegroundColor Green
+        write-host "$(get-date) timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
     }
     catch {
         write-error "exception:$($_ | fl * | out-string)"
