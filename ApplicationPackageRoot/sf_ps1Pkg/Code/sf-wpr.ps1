@@ -49,6 +49,12 @@ function main() {
         write-error "exception:$(get-date) $($_ | out-string)"
         write-error "$(get-date) $($error | out-string)"
     }
+    finally {
+        # stop new trace
+        stop-command
+        check-error
+    }
+
 }
 
 function copy-files($source = $outputFilePattern, $destination = $outputFileDestination) {

@@ -5,7 +5,8 @@
 [cmdletbinding()]
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
-    [bool]$continuous = ($env:continuous, $false -ne $null)[0]
+    [bool]$continuous = ($env:continuous, $false -ne $null)[0],
+    [string]$command = ($env:command, "" -ne $null)[0]
 )
 
 $ErrorActionPreference = "continue"
@@ -14,21 +15,19 @@ $error.clear()
 function main() {
     try {
         do {
-            #set-location $psscriptroot
+            set-location $psscriptroot
             $timer = get-date
             write-host "$(get-date) $($MyInvocation.ScriptName)`r`n" -ForegroundColor green
+            set-location $psscriptroot
+            Invoke-Expression -Command $command
 
-            {{my code}}
-
-            if ({{my error condition}} -or $error) {
+            if ($error) {
                 write-error "$(get-date) $($error | out-string)"
                 $error.Clear()
             }
-            
-            if ({{my warning condition}}) {
-                write-warning "WARNING:$(get-date)`r`n"
-            }
 
+            write-host "whoami: $(whoami /all) output: $(dir $psscriptroot\outfile* -recurse)"
+            write-host "output2: $(dir outfile* -recurse)"
             write-host "timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
             write-host "$(get-date) sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
             start-sleep -Seconds ($sleepMinutes * 60)

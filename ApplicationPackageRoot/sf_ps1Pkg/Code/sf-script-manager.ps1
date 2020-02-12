@@ -188,7 +188,7 @@ function wait-jobs() {
                 write-log -data $jobInfo -report $job.name
             }
             else {
-                write-log -data $job
+                write-log -data $job -report $job.name
             }
 
             if ($job.state -ine "running") {
@@ -258,7 +258,8 @@ function write-log($data, $report) {
         $stringData = "$(get-date):$($data | fl * | out-string)"
     }
 
-    write-host "level: $level sendreport: $sendReport report: $report data: $stringData`r`n"
+    $stringData = "level: $level sendreport: $sendReport report: $report data: $stringData`r`n"
+    write-host $stringData
     if($global:sfClientAvailable) {
         # todo: test
         out-file -FilePath "..\log\$global:scriptName.log" -InputObject $stringData -Append

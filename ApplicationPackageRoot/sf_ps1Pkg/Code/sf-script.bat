@@ -16,6 +16,7 @@ if "%1"=="setupentrypoint" (
 
 if "%1"=="entrypoint" (
 	echo entrypoint
-	powershell.exe -executionPolicy Bypass -nologo -noprofile -file "%scriptManagerFile%" -scripts "%scripts%" -doNotReturn
+	rem powershell.exe -executionPolicy Bypass -nologo -noprofile -file "%scriptManagerFile%" -scripts "%scripts%" -doNotReturn
+	powershell.exe -executionPolicy Bypass -nologo -file "%scriptManagerFile%" -scripts "%scripts%" -doNotReturn
 )
 
