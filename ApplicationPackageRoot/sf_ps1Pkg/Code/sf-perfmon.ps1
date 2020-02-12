@@ -18,7 +18,7 @@ function main() {
     try {
         do {
             set-location $psscriptroot
-            $timer = get-date
+            $startTimer = get-date
             write-host "$(get-date) $($MyInvocation.ScriptName)`r`n" -ForegroundColor green
             $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 
@@ -54,7 +54,7 @@ function main() {
                 $error.Clear()
             }
 
-            write-host "timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
+            write-host "timer: $(((get-date) - $startTimer).tostring())" -ForegroundColor Green
             write-host "$(get-date) sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
             start-sleep -Seconds ($sleepMinutes * 60)
 

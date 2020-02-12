@@ -16,7 +16,7 @@ function main() {
     try {
         do {
             set-location $psscriptroot
-            $timer = get-date
+            $startTimer = get-date
             write-host "$(get-date) $($MyInvocation.ScriptName)`r`n" -ForegroundColor green
             set-location $psscriptroot
             Invoke-Expression -Command $command
@@ -28,7 +28,7 @@ function main() {
 
             write-host "whoami: $(whoami /all) output: $(dir $psscriptroot\outfile* -recurse)"
             write-host "output2: $(dir outfile* -recurse)"
-            write-host "timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
+            write-host "timer: $(((get-date) - $startTimer).tostring())" -ForegroundColor Green
             write-host "$(get-date) sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
             start-sleep -Seconds ($sleepMinutes * 60)
         }

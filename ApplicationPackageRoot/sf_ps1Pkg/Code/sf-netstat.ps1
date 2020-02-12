@@ -19,7 +19,7 @@ $ephemPortCount = [convert]::ToInt32($match.Groups["numberOfPorts"].Value)
 $ephemEndPort = $ephemStartPort + $ephemPortCount - 1
 
 while ($true) {
-    $timer = get-date
+    $startTimer = get-date
     $netStat = @{ }
 
     $netStatRaw = Get-NetTCPConnection 
@@ -63,7 +63,7 @@ while ($true) {
     }
 
     $msg += "sleeping for $sleepMinutes minutes`r`n"
-    $msg += "$(get-date) timer: $(((get-date) - $timer).tostring())"
+    $msg += "$(get-date) timer: $(((get-date) - $startTimer).tostring())"
     write-output $msg
     
     start-sleep -Seconds ($sleepMinutes * 60)

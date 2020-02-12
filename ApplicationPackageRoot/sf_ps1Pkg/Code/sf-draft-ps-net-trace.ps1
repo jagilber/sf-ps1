@@ -19,7 +19,7 @@ function main() {
     try{
         do {
             $session = "nettrace"        
-            $timer = get-date
+            $startTimer = get-date
             write-host "$($MyInvocation.ScriptName)`r`n$psboundparameters`r`n"
 
             $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
@@ -124,7 +124,7 @@ function main() {
             write-host "copying files`r`n"
             move-item net.* ..\log
             
-            write-host "$(get-date) timer: $(((get-date) - $timer).tostring())`r`n"
+            write-host "$(get-date) timer: $(((get-date) - $startTimer).tostring())`r`n"
             write-host "$(get-date) finished`r`n"
         }
         while ($continuous) 
