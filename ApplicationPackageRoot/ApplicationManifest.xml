@@ -10,7 +10,7 @@
         example:.\test2.ps1 -runMinutes 2;.\test.ps1 -totalMinutes 1;https://raw.githubusercontent.com/jagilber/sf-ps1/master/ApplicationPackageRoot/sf_ps1Pkg/Code/sf-netstat.ps1 -sleepMinutes 4
   -->
   <Parameters>
-    <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-net-trace.ps1;.\sf-netstat.ps1;.\sf-perfmon.ps1" />
+    <Parameter Name="sf_ps1_scripts" DefaultValue=".\test-http-listener.ps1 -port 8080" />
     <Parameter Name="sf_ps1_scriptStartDateTimeUtc" DefaultValue="" />
     <Parameter Name="sf_ps1_scriptRecurrenceMinutes" DefaultValue="" />
     <Parameter Name="sf_ps1_storageKey" DefaultValue="" />
@@ -19,7 +19,7 @@
     <Parameter Name="sf_ps1_codeVersion" DefaultValue="1.0.0" />
     <Parameter Name="sf_ps1_InstanceCount" DefaultValue="-1" />
     <Parameter Name="sf_ps1_setupScripts" DefaultValue="" />
-    <Parameter Name="sf_ps1_sleepSeconds" DefaultValue="" />
+    <Parameter Name="sf_ps1_sleepSeconds" DefaultValue="1" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion
        should match the Name and Version attributes of the ServiceManifest element defined in the
@@ -63,7 +63,19 @@
   </DefaultServices>
   <Principals>
     <Users>
-      <User Name="SetupLocalSystem" AccountType="LocalSystem" />
+      <!--<User Name="SetupLocalSystem" AccountType="LocalSystem" />-->
+      <!--<User Name="SetupLocalSystem" AccountType="NetworkService" />-->
+      <!--works-->
+      <User Name="SetupLocalSystem" AccountType="LocalUser">
+        <MemberOf>
+          <SystemGroup Name="Administrators" />
+        </MemberOf>
+      </User>
+      <!--<User Name="SetupLocalSystem" AccountType="LocalUser" LoadUserProfile="true">
+        <MemberOf>
+          <SystemGroup Name="Users" />
+        </MemberOf>-->
+      <!--</User>-->
     </Users>
   </Principals>
   <Diagnostics>

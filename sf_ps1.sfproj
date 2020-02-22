@@ -27,8 +27,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-net-trace.ps1" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-exec.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-template.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-wpr.ps1" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\test-http-listener.ps1" />
     <None Include="ApplicationParameters\Cloud.xml" />
     <None Include="ApplicationParameters\Local.1Node.xml" />
     <None Include="ApplicationParameters\Local.5Node.xml" />

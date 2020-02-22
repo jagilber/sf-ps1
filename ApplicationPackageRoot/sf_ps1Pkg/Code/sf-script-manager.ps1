@@ -2,7 +2,7 @@
 [cmdletbinding()]
 param(
     [string]$scripts = $env:scripts,
-    [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0],
+    [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0], # todo fix. 
     [string]$detail = $env:detail,
     [string]$runOnNodes = $env:runOnNodes,
     [int]$reportTimeToLiveMinutes = ($env:reportTimeToLiveMinutes, 60 -ne $null)[0],
