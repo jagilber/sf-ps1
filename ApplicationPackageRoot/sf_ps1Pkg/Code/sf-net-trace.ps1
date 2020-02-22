@@ -19,7 +19,7 @@ function main() {
     try{
         do {
             $error.clear()
-            $startTimer = get-date
+            $timer = get-date
             write-host "$($MyInvocation.ScriptName)`r`n$psboundparameters`r`n"
             if(!(check-admin)) {return}
 
@@ -30,7 +30,7 @@ function main() {
             start-command
             check-error
             wait-command
-            $startTimer = get-date
+            $timer = get-date
 
             # stop new trace
             stop-command
@@ -39,7 +39,7 @@ function main() {
             # copy trace
             copy-files
 
-            write-host "$(get-date) timer: $(((get-date) - $startTimer).tostring())"
+            write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
             write-host "$(get-date) finished" -ForegroundColor green
         }
         while ($continuous) 
@@ -66,7 +66,9 @@ function check-error() {
         write-error "$(get-date) $($error | fl * | out-string)"
         write-host "$(get-date) $($error | fl * | out-string)"
         $error.Clear()
+        return $true
     }
+    return $false
 }
 
 function copy-files($source = $outputFilePattern, $destination = $outputFileDestination) {
@@ -99,11 +101,12 @@ function start-command() {
     netsh trace start capture=yes overwrite=yes maxsize=$maxSizeMb traceFile=$outputFile filemode=circular
 }
 
-function wait-command($minutes = $sleepMinutes, $timer = $startTimer) {
-    write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
+function wait-command($minutes = $sleepMinutes, $currentTimer = $timer) {
+    write-host "$(get-date) timer: $(((get-date) - $currentTimer).tostring())"
     write-host "$(get-date) sleeping $minutes minutes" -ForegroundColor green
     start-sleep -Seconds ($minutes * 60)
     write-host "$(get-date) resuming" -ForegroundColor green
+    write-host "$(get-date) timer: $(((get-date) - $currentTimer).tostring())"
 }
 
 main

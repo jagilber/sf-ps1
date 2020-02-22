@@ -15,7 +15,7 @@ function main() {
     try {
         do {
             #set-location $psscriptroot
-            $startTimer = get-date
+            $timer = get-date
             write-host "$(get-date) $($MyInvocation.ScriptName)`r`n" -ForegroundColor green
 
             {{my code}}
@@ -29,7 +29,7 @@ function main() {
                 write-warning "WARNING:$(get-date)`r`n"
             }
 
-            write-host "timer: $(((get-date) - $startTimer).tostring())" -ForegroundColor Green
+            write-host "timer: $(((get-date) - $timer).tostring())" -ForegroundColor Green
             write-host "$(get-date) sleeping for $sleepMinutes minutes`r`n" -ForegroundColor Green
             start-sleep -Seconds ($sleepMinutes * 60)
         }

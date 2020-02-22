@@ -3,7 +3,6 @@
 #
 
 param(
-    [ValidateSet('livekd.exe', 'psexec.exe', 'procmon.exe', 'procdump.exe', 'procexp.exe', 'tcpview.exe', 'rammap.exe', 'handle.exe')]
     [string]$sysInternalsExe = ($env:sysInternalsExe, "procdump.exe" -ne $null)[0],
     [string]$sysInternalsExeStartCommand = ($env:sysInternalsExeStartCommand, "-accepteula -l -ma" -ne $null)[0],
     [string]$sysInternalsExeStopCommand = ($env:sysInternalsExeStopCommand, "" -ne $null)[0],
@@ -47,12 +46,61 @@ function main() {
             write-host "$(get-date) noexecute returning" -ForegroundColor Green
         }
 
+        $wildName = "*$([io.path]::GetFileNameWithoutExtension($processName))*"
+        $processes = @{ }
+
+        if ([convert]::ToInt32($processName)) {
+            $processes = @(get-process | select Name, Id | ? Id -eq $processName)
+        }
+        else {
+            $processes = @(get-process | select Name, Id | ? Name -ieq $processName)
+            if (!$processes) {
+                $processes = @(get-process | select Name, Id | ? Name -imatch $processName)
+            }
+        }
+
+        $startArguments = $sysInternalsExeStartCommand
+
+        switch ($processes.Count) {
+            { $_ -eq 1 } { 
+                $startArguments += " $($processes[0].Name)"
+            }
+            { $_ -gt 1 } { 
+                if ($allProcessInstances) {
+                    write-host "multiple processses. attaching to $($processes.Count) instances"
+                    foreach ($process in $processes) {
+                        $scriptParameters.processName = $process.Id
+                        start-job -Name $process.Id -ArgumentList @($MyInvocation.ScriptName, $scriptParameters) -scriptblock { 
+                            param($exe, $startArguments)
+                            write-host "start-job:$exe $startArguments"
+                            invoke-expression -command "$exe $startArguments"
+                        }
+                    }
+
+                    while (get-job) {
+                        $job = get-job
+                        $results = Receive-Job -Job $Job
+                        Write-Host ($results | convertto-json)
+                        if ($job.State -ine "running") {
+                            write-host "$($job.state) $($job.status) $($job | fl * | out-string)"
+                            Remove-Job -Job $job -force
+                        }
+                        start-sleep -Seconds 1
+                    }
+                }
+                else {
+                    write-warning "multiple processses. attaching to first only"
+                    $startArguments += " $($processes[0].Id)"
+                }
+            }
+            { $_ -lt 1 } { 
+                $startArguments += " -w $processName"
+            }
+        }
+
         start-command
-
         wait-command
-        
         stop-command
-
         copy-files
 
         write-host "$(get-date) finished" -ForegroundColor Green

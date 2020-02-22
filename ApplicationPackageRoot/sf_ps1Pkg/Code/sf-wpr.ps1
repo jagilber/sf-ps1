@@ -20,7 +20,7 @@ function main() {
         do {
             #set-location $psscriptroot
             $error.clear()
-            $startTimer = get-date
+            $timer = get-date
             write-host "$($MyInvocation.ScriptName)`r`n$psboundparameters`r`n"
             if(!(check-admin)) {return}
 
@@ -32,7 +32,7 @@ function main() {
             start-command
             check-error
             wait-command
-            $startTimer = get-date
+            $timer = get-date
 
             # stop new trace
             stop-command
@@ -41,7 +41,7 @@ function main() {
             # copy trace
             copy-files -source
 
-            write-host "$(get-date) timer: $(((get-date) - $startTimer).tostring())"
+            write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
         }
         while ($continuous) 
         write-host "$(get-date) finished" -ForegroundColor green
@@ -74,7 +74,9 @@ function check-error() {
         write-error "$(get-date) $($error | fl * | out-string)"
         write-host "$(get-date) $($error | fl * | out-string)"
         $error.Clear()
+        return $true
     }
+    return $false
 }
 
 function copy-files($source = $outputFilePattern, $destination = $outputFileDestination) {
@@ -120,11 +122,12 @@ function start-command() {
     write-host "$(get-date) startafter:wpr -status : isRunning: $(![regex]::IsMatch((wpr -status),'(WPR is not recording)'))`r`n$(wpr -status)"
 }
 
-function wait-command($minutes = $sleepMinutes, $timer = $startTimer) {
-    write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
+function wait-command($minutes = $sleepMinutes, $currentTimer = $timer) {
+    write-host "$(get-date) timer: $(((get-date) - $currentTimer).tostring())"
     write-host "$(get-date) sleeping $minutes minutes" -ForegroundColor green
     start-sleep -Seconds ($minutes * 60)
     write-host "$(get-date) resuming" -ForegroundColor green
+    write-host "$(get-date) timer: $(((get-date) - $currentTimer).tostring())"
 }
 
 main
