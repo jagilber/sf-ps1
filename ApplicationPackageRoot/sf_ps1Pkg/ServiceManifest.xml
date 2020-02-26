@@ -58,7 +58,7 @@
            listen. Please note that if your service is partitioned, this port is shared with
            replicas of different partitions that are placed in your code. -->
       <!--<Endpoint Name="sf_ps1TypeEndpoint" Port="8080" Protocol="http" Type="Input" UriScheme="http" PathSuffix="" />-->
-      <Endpoint Name="sfendpoint" Port="8080" Type="Input" />
+      <Endpoint Name="sfendpoint" Port="8081" Type="Input" />
       <!--<Endpoint Name="sf_ps1TypeEndpoint" />-->
     </Endpoints>
   </Resources>

@@ -10,7 +10,7 @@
         example:.\test2.ps1 -runMinutes 2;.\test.ps1 -totalMinutes 1;https://raw.githubusercontent.com/jagilber/sf-ps1/master/ApplicationPackageRoot/sf_ps1Pkg/Code/sf-netstat.ps1 -sleepMinutes 4
   -->
   <Parameters>
-    <Parameter Name="sf_ps1_scripts" DefaultValue=".\test-http-listener.ps1 -port 8080" />
+    <Parameter Name="sf_ps1_scripts" DefaultValue=".\test-http-listener.ps1 -server -port 8081" />
     <Parameter Name="sf_ps1_scriptStartDateTimeUtc" DefaultValue="" />
     <Parameter Name="sf_ps1_scriptRecurrenceMinutes" DefaultValue="" />
     <Parameter Name="sf_ps1_storageKey" DefaultValue="" />
@@ -81,7 +81,7 @@
   <Diagnostics>
     <FolderSource
         DataDeletionAgeInDays="1"
-        IsEnabled="true"
+        IsEnabled="false"
         RelativeFolderPath="">
       <!-- https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-service-model-schema-elements#destinations-element-defined-in-foldersource
           RelativeFolderPath is the name if any of the subfolder in 'log' folder for application in _App folder on node  for upload
@@ -98,7 +98,7 @@
             ConnectionStringIsEncrypted="false"
             ContainerName="sf-ps1"
             DataDeletionAgeInDays="10"
-            IsEnabled="true"
+            IsEnabled="false"
             UploadIntervalInMinutes="1">
         </AzureBlob>
       </Destinations>
