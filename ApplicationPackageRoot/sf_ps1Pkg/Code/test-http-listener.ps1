@@ -5,41 +5,34 @@ param(
     [int]$port = 80,
     [int]$count = 0,
     [string]$hostName = 'localhost',
-    [switch]$server,
+    [bool]$server,
     [hashtable]$clientHeaders = @{ },
     [string]$clientBody = 'test message from client',
     [ValidateSet('GET', 'POST', 'HEAD')]
     [string]$clientMethod = "GET",
-    [string]$absolutePath = '/'
+    [string]$absolutePath = '/',
+    [string]$proxy = "", #"http://localhost:$($port + 1)/",
+    [bool]$useClientProxy
 )
 
 $uri = "http://$($hostname):$port$absolutePath"
 $http = $null
 $scriptParams = $PSBoundParameters
+$httpClient = $null
+$httpClientHandler = $null
 
 function main() {
     try {
         if (!$server) {
-            start-client
+            #start-client
+            start-httpClient
         }
         else {
             # start as job so server can exit gracefully after 2 minutes of cancellation
-            #if ($host.Name -ine "ServerRemoteHost") {
-            if ($false) {
+            if ($host.Name -ine "ServerRemoteHost") {
+                #if ($false) {
                 # called on foreground thread only
-                start-job -ScriptBlock { param($script, $params); . $script @params } -ArgumentList $MyInvocation.ScriptName, $scriptParams
-
-                while (get-job) {
-                    foreach ($job in get-job) {
-                        $jobInfo = Receive-Job -Job $job | convertto-json -Depth 5
-                        if ($jobInfo) { write-host $jobInfo }
-                        if ($job.State -ine "running") {
-                            Remove-Job -Job $job -Force
-                        }
-                    }
-                    start-sleep -Seconds 1
-                }
-    
+                start-server -asjob
             }
             else {
                 start-server
@@ -50,6 +43,9 @@ function main() {
     }
     finally {
         Get-Job | Remove-job -Force
+        if ($httpClientHandler) {
+            $httpClientHandler.Dispose()
+        }
         if ($http) {
             $http.Stop()
             $http.Close()
@@ -58,8 +54,81 @@ function main() {
     }
 }
 
-function start-client([hashtable]$header = $clientHeaders, [string]$body = $clientBody, [string]$method = $clientMethod, [string]$clientUri = $uri) {
+function start-httpClient([hashtable]$header = $clientHeaders, [string]$body = $clientBody, [net.http.httpMethod]$method = $clientMethod, [string]$clientUri = $uri) {
     $iteration = 0
+    $httpClientHandler = new-object net.http.HttpClientHandler
+
+    if($proxy) {
+        $proxyPort = $port++
+        if($useClientProxy) {
+        start-server -asjob -serverPort $proxyPort
+        }
+        $httpClientHandler.UseProxy = $true
+        $httpClientHandler.Proxy = new-object net.webproxy("http://localhost:$proxyPort/",$false)
+    }
+
+    $httpClient = New-Object net.http.httpClient($httpClientHandler)
+
+
+    while ($iteration -lt $count -or $count -eq 0) {
+        try {
+            $requestId = [guid]::NewGuid().ToString()
+            write-verbose "request id: $requestId"
+            $requestMessage = new-object net.http.httpRequestMessage($method, $clientUri )
+           # $responseMessage = new-object net.http.httpResponseMessage
+
+            if($method -ine [net.http.httpMethod]::Get) {
+                $httpContent = new-object net.http.stringContent([string]::Empty,[text.encoding]::ascii,'text/html')
+                $requestMessage.Content = $httpContent
+            }
+            else {
+                $httpContent = new-object net.http.stringContent([string]::Empty,[text.encoding]::ascii,'text/html')
+                #$responseMessage.Content = $httpContent
+            }
+
+            if ($header.Count -lt 1) {
+                $requestMessage.Headers.Accept.TryParseAdd('application/json')
+                $requestMessage.Headers.Add('client',$env:COMPUTERNAME)
+                #$requestMessage.Headers.Add('host',$hostname)
+                $requestMessage.Headers.Add('x-ms-app', [io.path]::GetFileNameWithoutExtension($MyInvocation.ScriptName))
+                $requestMessage.Headers.Add('x-ms-user', $env:USERNAME)
+                $requestMessage.Headers.Add('x-ms-client-request-id', $requestId)
+            }
+
+            #$response = $httpClient.GetAsync($clientUri, 1).Result #
+            #$response = $httpClient.PostAsync($clientUri,$httpContent).Result # works but no content in response
+            $response = $httpClient.SendAsync($requestMessage, 1).Result # works but no content in response
+            #write-host ($httpClient | fl * | convertto-json -Depth 99)
+            #$requestMessage.
+            $httpClient
+            $response
+            $response.Content | convertto-json
+            $response.Content.ReadAsStringAsync().Result 
+        #    pause
+        
+            if ($error) {
+                write-host "$($error | out-string)"
+                $error.Clear()
+            }
+        }
+        catch {
+            Write-Warning "exception reading from server`r`n$($_)"
+        }
+
+        start-sleep -Seconds 1
+        $iteration++
+    }
+}
+
+function start-client([hashtable]$header = $clientHeaders, [string]$body = $clientBody, [net.http.httpMethod]$method = $clientMethod, [string]$clientUri = $uri) {
+    $iteration = 0
+    
+    if ($useClientProxy) {
+        $proxyPort = $port++
+        start-server -asjob -serverPort $proxyPort -return
+        #$proxy = new-object net.webproxy("http://localhost:$proxyPort/", $false)
+        $proxy = "http://localhost:$proxyPort/"
+    }
 
     while ($iteration -lt $count -or $count -eq 0) {
         try {
@@ -79,7 +148,7 @@ function start-client([hashtable]$header = $clientHeaders, [string]$body = $clie
             }
 
             $params = @{
-                method  = $method
+                method  = $method.Method
                 uri     = $uri
                 headers = $header
             }
@@ -87,6 +156,10 @@ function start-client([hashtable]$header = $clientHeaders, [string]$body = $clie
             if ($method -ieq 'POST' -and ![string]::IsNullOrEmpty($body)) {
                 $params += @{body = $body }
             }
+            if ($proxy) {
+                $params += @{proxy = $proxy }
+            }
+
             write-verbose ($header | convertto-json)
             Write-Verbose ($params | fl * | out-string)
     
@@ -108,11 +181,37 @@ function start-client([hashtable]$header = $clientHeaders, [string]$body = $clie
     }
 }
 
-function start-server() {
+function start-server([switch]$asjob, [int]$serverPort = $port, [switch]$return) {
+
+    if ($asjob) {
+        [void]$scriptParams.Remove('server')
+        [void]$scriptParams.Add('server',$true)
+        [void]$scriptParams.Remove('useClientProxy')
+        start-job -ScriptBlock { param($script, $params); . $script @params } -ArgumentList $MyInvocation.ScriptName, $scriptParams
+
+        while (get-job) {
+            foreach ($parentjob in get-job) {
+                foreach($job in $parentjob) {
+                    $jobInfo = Receive-Job -Job $job | convertto-json -Depth 5
+                    if ($jobInfo) { write-host $jobInfo }
+                    if ($job.State -ine "running" -and $job.State -ine "NotStarted") {
+                        Remove-Job -Job $job -Force
+                    }
+                    elseif($return) {
+                        return
+                    }
+                }
+            }
+            start-sleep -Seconds 1
+        }
+
+    }
+
     $iteration = 0
     $http = [net.httpListener]::new();
-    $http.Prefixes.Add("http://$(hostname):$port/")
-    $http.Prefixes.Add("http://*:$port/")
+    $http.Prefixes.Add("http://$(hostname):$serverPort/")
+    $http.Prefixes.Add("http://*:$serverPort/")
+    $http.Prefixes.Add("http://localhost:$serverPort/")
     $http.Start();
     $maxBuffer = 1024
 
