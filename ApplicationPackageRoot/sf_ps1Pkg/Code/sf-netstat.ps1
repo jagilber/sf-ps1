@@ -3,7 +3,7 @@
 ###########################
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
-    [string[]]$processNames = ($env:ProcessNames, @("fabric","fabrichost","fabricgateway") -ne $null)[0],
+    [string[]]$processNames = ($env:ProcessNames, @("fabric","fabrichost","edge","fabricgateway") -ne $null)[0],
     $maxConnectionCount = ($env:maxConnectionCount, 1000 -ne $null)[0]
 )
 
@@ -40,7 +40,9 @@ while ($true) {
     $msg += "ephemeral ports in use: $ephemPortsInUse`r`n"
     $msg += "`r`ntotal network ports in use: $($netstatRaw.Count)`r`n$($netStat | convertto-json )`r`n"
 
-    foreach($processName in @($processNames)) {
+    $filteredProcesses = (get-process | ? Name -imatch (@($processNames) -join '|')).Name
+
+    foreach($processName in @($filteredProcesses)) {
         foreach($id in (get-process $processName).id) {
             $netStatProcess = @($netStatRaw | where-object OwningProcess -eq $id)
             $netStatProcessGrouped = $netStatProcess | group-object state
