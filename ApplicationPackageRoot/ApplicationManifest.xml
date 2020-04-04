@@ -11,7 +11,7 @@
   -->
   <Parameters>
     <!--<Parameter Name="sf_ps1_scripts" DefaultValue=".\test-http-listener.ps1 -server $true -port 8081" />-->
-    <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-netstat.ps1" />
+    <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-netstat.ps1;.\sf-docker-log.ps1" />
     <Parameter Name="sf_ps1_scriptStartDateTimeUtc" DefaultValue="" />
     <Parameter Name="sf_ps1_scriptRecurrenceMinutes" DefaultValue="" />
     <Parameter Name="sf_ps1_storageKey" DefaultValue="" />
@@ -81,8 +81,8 @@
   </Principals>
   <Diagnostics>
     <FolderSource
-        DataDeletionAgeInDays="1"
-        IsEnabled="false"
+        DataDeletionAgeInDays="10"
+        IsEnabled="true"
         RelativeFolderPath="">
       <!-- https://docs.microsoft.com/en-us/azure/service-fabric/service-fabric-service-model-schema-elements#destinations-element-defined-in-foldersource
           RelativeFolderPath is the name if any of the subfolder in 'log' folder for application in _App folder on node  for upload
@@ -99,7 +99,7 @@
             ConnectionStringIsEncrypted="false"
             ContainerName="sf-ps1"
             DataDeletionAgeInDays="10"
-            IsEnabled="false"
+            IsEnabled="true"
             UploadIntervalInMinutes="1">
         </AzureBlob>
       </Destinations>

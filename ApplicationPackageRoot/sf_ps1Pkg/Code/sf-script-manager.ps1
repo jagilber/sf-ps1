@@ -30,7 +30,7 @@ function main() {
     }
 
     try {
-        #set-location $psscriptroot
+        set-location $psscriptroot
         $global:scriptName = [io.path]::getFileName($MyInvocation.ScriptName)
         
        
