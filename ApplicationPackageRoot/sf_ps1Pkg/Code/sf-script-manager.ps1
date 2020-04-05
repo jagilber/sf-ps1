@@ -261,9 +261,12 @@ function write-log($data, $report) {
     $stringData = "$(get-date) level: $level sendreport: $sendReport report: $report data:`r`n$stringData`r`n"
     write-host $stringData
     if($global:sfClientAvailable) {
-        # todo: test
-        out-file -FilePath "..\log\$global:scriptName.log" -InputObject $stringData -Append
-        # end test
+        try {
+            out-file -FilePath "..\log\$global:scriptName.log" -InputObject $stringData -Append -errorAction continue
+        }
+        catch {
+            write-warning "unable to save to log file: $($_)"  
+		}
     }
 
     if ($sendReport -and $global:sfClientAvailable) {

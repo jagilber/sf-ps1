@@ -100,7 +100,7 @@
             ContainerName="sf-ps1"
             DataDeletionAgeInDays="10"
             IsEnabled="true"
-            UploadIntervalInMinutes="1">
+            UploadIntervalInMinutes="10">
         </AzureBlob>
       </Destinations>
     </FolderSource>
