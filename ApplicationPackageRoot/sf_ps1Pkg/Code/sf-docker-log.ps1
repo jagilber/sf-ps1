@@ -9,7 +9,7 @@ script to monitor docker console stderr .err and stdout .out sf files
 [cmdletbinding()]
 param(
     $sfDockerLogDir = 'D:\SvcFab\Log\_sf_docker_logs\',
-    $tailLength = 1000,
+    $tailLength = 20,
     $sleepMilliseconds = 500
 )
 

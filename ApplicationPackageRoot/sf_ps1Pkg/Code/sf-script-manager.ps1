@@ -247,7 +247,7 @@ function write-log($data, $report) {
             }
 
             if($stringData.Trim().Length -gt 0) {
-                $stringData += "`r`nname: $($data.Name) state: $($job.State) $($job.Status)`r`n"     
+                $stringData += "`r`nname: $($data.Name) state: $($job.State) $($job.Status) $($job.PSBeginTime)`r`n"
             }
             else{
                 return
@@ -258,7 +258,7 @@ function write-log($data, $report) {
         $stringData = "$(get-date):$($data | fl * | out-string)"
     }
 
-    $stringData = "level: $level sendreport: $sendReport report: $report data: $stringData`r`n"
+    $stringData = "$(get-date) level: $level sendreport: $sendReport report: $report data:`r`n$stringData`r`n"
     write-host $stringData
     if($global:sfClientAvailable) {
         # todo: test
@@ -272,7 +272,7 @@ function write-log($data, $report) {
             $error.clear()
 
             if (!$report) { $report = ($jobName, $global:scriptName -ne $null)[0] }
-            write-host "Send-ServiceFabricNodeHealthReport 
+            write-host "$(get-date) Send-ServiceFabricNodeHealthReport 
                 -RemoveWhenExpired
                 -TimeToLiveSec $($reportTimeToLiveMinutes * 60)
                 -NodeName $nodeName 
