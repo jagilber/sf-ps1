@@ -11,6 +11,7 @@ param(
     [switch]$doNotReturn
 )
 
+$PSModuleAutoLoadingPreference = 2
 $error.Clear()
 $errorActionPreference = "continue"
 $global:scriptCommands = @($scripts.Split(';'))
@@ -201,12 +202,6 @@ function wait-jobs() {
                 write-log -data $job -report $job.name
                 remove-job -Id $job.Id -Force  
             }
-#            else {
-#                $jobInfo = (receive-job -Id $job.id)
-#                if ($jobInfo) {
-#                    write-log -data $jobInfo -report $job.name
-#                }
-#            }
 
             start-sleep -Seconds $sleepSeconds
         }
@@ -262,7 +257,7 @@ function write-log($data, $report) {
     write-host $stringData
     if($global:sfClientAvailable) {
         try {
-            out-file -FilePath "..\log\$global:scriptName.log" -InputObject $stringData -Append -errorAction continue
+            out-file -FilePath "..\log\$($global:scriptName)-$((get-date).tostring('yyMMdd')).log" -InputObject $stringData -Append -errorAction continue
         }
         catch {
             write-warning "unable to save to log file: $($_)"  

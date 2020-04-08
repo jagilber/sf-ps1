@@ -20,8 +20,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ApplicationPackageRoot\ApplicationManifest.xml" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\event-log-manager.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-console-graph.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-docker-log.ps1" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-docker-monitor.ps1" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-etw-wcmsvc.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-net-trace.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-netsh-show-http.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -33,7 +36,8 @@
     </None>
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-net-trace.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-exec.ps1" />
-    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-template.ps1" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\_sf-etw-template.ps1" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\_sf-template.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-wpr.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\test-http-listener.ps1" />
     <None Include="ApplicationParameters\Cloud.xml" />
