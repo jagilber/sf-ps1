@@ -3,7 +3,7 @@
   <Parameters>
     <Parameter Name="sf_ps1_scripts" Value=".\sf-netstat.ps1;.\sf-console-graph.ps1" />
     <Parameter Name="sf_ps1_instanceCount" Value="-1" />
-    <Parameter Name="sf_ps1_storageKey" Value="DefaultEndpointsProtocol=https;AccountName={{storage account}};AccountKey={{storage account key}}" />
+    <!--<Parameter Name="sf_ps1_storageKey" Value="DefaultEndpointsProtocol=https;AccountName={{storage account}};AccountKey={{storage account key}}" />-->
     <Parameter Name="sf_ps1_storageEnabled" Value="false" />
   </Parameters>
 </Application>
