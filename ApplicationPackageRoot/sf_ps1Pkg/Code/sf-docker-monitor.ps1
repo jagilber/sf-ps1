@@ -21,12 +21,14 @@ function main() {
 
     $currentProcesses = (get-process) -imatch 'docker'
     $diffProcesses = [collections.arrayList]::new()
-    
     $error.Clear()
+    
+    # shows up as error health event due to warning in docker info output. force quick refresh
+    start-sleep -seconds 5
 
     while ($true) {
         clear-host;
-        (get-date).tostring('o');
+        write-host ((get-date).tostring('o'))
 
         #docker stats;
         write-host 'Get-NetNatStaticMapping:'
@@ -36,7 +38,7 @@ function main() {
         $containers = (iwr "$dockerEndpoint/containers/json" -useBasicParsing) | ConvertFrom-Json
         #write-host ($containers | convertto-json)
 
-        foreach($container in $containers) {
+        foreach ($container in $containers) {
             write-host "docker logs --timestamps --since $($sleepSeconds)s --details --tail $tail $($container.Id)"
             write-host ((docker logs --timestamps --since "$($sleepSeconds)s" --details --tail $tail $container.Id) | out-string)
             write-host 
@@ -53,11 +55,6 @@ function main() {
             $currentProcesses = $newProcesses
         }
 
-        if ($diffProcesses) {
-            write-host 'previous docker processes:'
-            write-host ($diffProcesses | select NPM, PM, WS, CPU, ID, StartTime, ProcessName | ft * -AutoSize | out-string)
-        }
-        
         write-host 'current docker processes:'
         write-host ($currentProcesses | select NPM, PM, WS, CPU, ID, StartTime, ProcessName | ft * -AutoSize | out-string)
 
@@ -69,6 +66,11 @@ function main() {
 
         write-host 'docker network ls:'
         write-host (docker network ls | out-string)
+
+        if ($diffProcesses) {
+            write-host 'previous docker processes:'
+            write-host ($diffProcesses | select NPM, PM, WS, CPU, ID, StartTime, ProcessName | ft * -AutoSize | out-string)
+        }
 
         write-host 'docker images:'
         write-host (docker images | out-string)

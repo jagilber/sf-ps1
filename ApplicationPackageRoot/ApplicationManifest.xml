@@ -10,8 +10,8 @@
         example:.\test2.ps1 -runMinutes 2;.\test.ps1 -totalMinutes 1;https://raw.githubusercontent.com/jagilber/sf-ps1/master/ApplicationPackageRoot/sf_ps1Pkg/Code/sf-netstat.ps1 -sleepMinutes 4
   -->
   <Parameters>
-    <!--<Parameter Name="sf_ps1_scripts" DefaultValue=".\test-http-listener.ps1 -server $true -port 8081" />-->
-    <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-docker-log.ps1;.\sf-docker-monitor.ps1;.\sf-console-graph.ps1" />
+    <!--<Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-netstat.ps1;.\test-http-listener.ps1 -server $true -port 8081" />-->
+    <Parameter Name="sf_ps1_scripts" DefaultValue=".\sf-docker-log.ps1;.\sf-docker-monitor.ps1" />
     <Parameter Name="sf_ps1_scriptStartDateTimeUtc" DefaultValue="" />
     <Parameter Name="sf_ps1_scriptRecurrenceMinutes" DefaultValue="" />
     <Parameter Name="sf_ps1_storageKey" DefaultValue="" />
