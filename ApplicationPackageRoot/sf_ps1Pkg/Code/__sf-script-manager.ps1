@@ -1,4 +1,4 @@
-#
+# script to manage other scripts and output to node health events
 [cmdletbinding()]
 param(
     [string]$scripts = $env:scripts,

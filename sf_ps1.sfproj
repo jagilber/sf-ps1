@@ -30,7 +30,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-perfmon.ps1" />
-    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-script-manager.ps1" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\__sf-script-manager.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-netstat.ps1">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
