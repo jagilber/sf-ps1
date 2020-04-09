@@ -7,7 +7,9 @@ monitor docker status
 #>
 
 param(
-    $sleepSeconds = 60
+    $sleepSeconds = 60,
+    $dockerEndpoint = 'http://localhost:2375/',
+    $tail = 30
 )
 
 function main() {
@@ -16,11 +18,29 @@ function main() {
 
     write-host 'docker info:'
     write-host (docker info | out-string)
+
     $currentProcesses = (get-process) -imatch 'docker'
+    $diffProcesses = [collections.arrayList]::new()
+    
+    $error.Clear()
 
     while ($true) {
         clear-host;
         (get-date).tostring('o');
+
+        #docker stats;
+        write-host 'Get-NetNatStaticMapping:'
+        write-host (Get-NetNatStaticMapping | out-string)
+
+        write-host "iwr $dockerEndpoint/containers/json"
+        $containers = (iwr "$dockerEndpoint/containers/json" -useBasicParsing) | ConvertFrom-Json
+        #write-host ($containers | convertto-json)
+
+        foreach($container in $containers) {
+            write-host "docker logs --timestamps --since $($sleepSeconds)s --details --tail $tail $($container.Id)"
+            write-host ((docker logs --timestamps --since "$($sleepSeconds)s" --details --tail $tail $container.Id) | out-string)
+            write-host 
+        }
 
         $newProcesses = (get-process) -imatch 'docker'
         $diffIds = (Compare-Object -ReferenceObject $currentProcesses -DifferenceObject $newProcesses -Property Id).Id
@@ -28,14 +48,14 @@ function main() {
 
         if ($diffIds) {
             write-host 'different docker processes:'
-            write-warning ($currentDiffProcesses | select NPM, PM, WS, CPU, ID, StartTime, ProcessName,ExitTime,ExitCode | ft * -AutoSize | out-string)
+            write-warning ($currentDiffProcesses | select NPM, PM, WS, CPU, ID, StartTime, ProcessName | ft * -AutoSize | out-string)
             $diffProcesses += $currentDiffProcesses
             $currentProcesses = $newProcesses
         }
 
         if ($diffProcesses) {
             write-host 'previous docker processes:'
-            write-host ($diffProcesses | select NPM, PM, WS, CPU, ID, StartTime, ProcessName,ExitTime,ExitCode | ft * -AutoSize | out-string)
+            write-host ($diffProcesses | select NPM, PM, WS, CPU, ID, StartTime, ProcessName | ft * -AutoSize | out-string)
         }
         
         write-host 'current docker processes:'
@@ -52,10 +72,6 @@ function main() {
 
         write-host 'docker images:'
         write-host (docker images | out-string)
-
-        #docker stats;
-        write-host 'Get-NetNatStaticMapping:'
-        write-host (Get-NetNatStaticMapping | out-string)
 
         if ($sleepSeconds -gt 0) {
             write-host "sleeping $sleepSeconds seconds"
