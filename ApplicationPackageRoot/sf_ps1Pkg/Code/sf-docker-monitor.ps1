@@ -27,7 +27,6 @@ function main() {
     start-sleep -seconds 5
 
     while ($true) {
-        clear-host;
         write-host ((get-date).tostring('o'))
 
         #docker stats;
@@ -41,7 +40,7 @@ function main() {
         foreach ($container in $containers) {
             write-host "docker logs --timestamps --since $($sleepSeconds)s --details --tail $tail $($container.Id)"
             write-host ((docker logs --timestamps --since "$($sleepSeconds)s" --details --tail $tail $container.Id) | out-string)
-            write-host 
+            write-host ""
         }
 
         $newProcesses = (get-process) -imatch 'docker'
