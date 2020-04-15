@@ -23,9 +23,6 @@ $source = $env:Fabric_ServiceName
 $global:scriptName = $null
 $global:scriptParams = ($psboundparameters | out-string)
 $global:sfClientAvailable = $false
-$global:logStream = $null
-$global:logTimer = [timers.timer]::new()
-$global:datedLogFile = $null
 $global:ProcessInfo = $null
 
 function main() {
@@ -343,31 +340,8 @@ function write-log($data, $report) {
 
     if ($global:sfClientAvailable) {
         try {
-            $newLogFile = "$logDirectory\$($global:scriptName)-$((get-date).tostring('yyMMddhh')).log"
-            if ($newLogFile -ine $global:datedLogFile) {
-                if ($global:logStream) {
-                    [void]$global:logStream.Close()
-                    $global:logStream = $null
-                }
-            }
-            if ($global:logStream -eq $null) {
-                $global:datedLogFile = $newLogFile
-                $global:logStream = new-object System.IO.StreamWriter ($global:datedLogFile, $true)
-                $global:logTimer.Interval = 5000 #5 seconds
-
-                Register-ObjectEvent -InputObject $global:logTimer -EventName elapsed -SourceIdentifier logTimer -Action `
-                { 
-                    Unregister-Event -SourceIdentifier logTimer | out-null
-                    [void]$global:logStream.Close() 
-                    $global:logStream = $null
-                }
-
-                $global:logTimer.start() 
-            }
-
-            # reset timer
-            $global:logTimer.Interval = 5000 #5 seconds
-            $global:logStream.WriteLine("$([DateTime]::Now.ToString())::$([Diagnostics.Process]::GetCurrentProcess().ID)::$($stringData)")
+            $datedLogFile = "$logDirectory\$($global:scriptName)-$((get-date).tostring('yyMMddhh')).log"
+            out-file -append -InputObject ("$([DateTime]::Now.ToString())::$([Diagnostics.Process]::GetCurrentProcess().ID)::$($stringData)") -FilePath $datedLogFile
         }
         catch {
             Write-error "write-log:exception $($_):$($error)"
