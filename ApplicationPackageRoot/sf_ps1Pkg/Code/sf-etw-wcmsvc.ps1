@@ -26,6 +26,7 @@ param(
 $PSModuleAutoLoadingPreference = 2
 $ErrorActionPreference = "continue"
 write-host "$($psboundparameters | fl * | out-string)`r`n" -ForegroundColor green
+$script:commandRunning = $false
 
 function main() {
     try {
@@ -59,6 +60,11 @@ function main() {
     catch {
         write-error "exception:$(get-date) $($_ | out-string)"
         write-error "$(get-date) $($error | out-string)"
+    }
+    finally {
+        if($script:commandRunning){
+            stop-command
+        }
     }
 }
 
@@ -104,6 +110,7 @@ function stop-command() {
     write-host "$(get-date) stopping existing trace`r`n" -ForegroundColor green
     write-host "logman stop $sessionName -ets"
     logman stop $sessionName -ets
+    $script:commandRunning = $false
 }
 
 function start-command() {
@@ -115,6 +122,7 @@ function start-command() {
         write-host "logman update trace $sessionName -p $etwProvider $keywords 0xff -ets"
         logman update trace $sessionName -p $etwProvider $keywords 0xff -ets
     }
+    $script:commandRunning = $true
 }
 
 main

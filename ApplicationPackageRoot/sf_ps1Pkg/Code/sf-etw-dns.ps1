@@ -10,7 +10,7 @@ param(
     [string]$outputFileDestination = ($env:outputFileDestination, "..\log" -ne $null)[0],
     [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0],
     [string]$sessionName = "sf_ps1_etw_Session",
-    [string]$outputFile = ".\sf_ps1_etw.etl",
+    [string]$outputFile = ".\sf_ps1_etw_dns.etl",
     [string]$mode = 'Circular',
     [int]$buffSize = 1024,
     [int]$numBuffers = 16,

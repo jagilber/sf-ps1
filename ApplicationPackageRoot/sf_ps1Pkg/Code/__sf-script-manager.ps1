@@ -77,7 +77,7 @@ function main() {
 
             monitor-jobs
 
-            if(!@(get-jobs).count -gt 0){
+            if (!@(get-job).count -gt 0) {
                 # No jobs
                 break
             }
@@ -88,6 +88,7 @@ function main() {
             $before = [System.GC]::GetTotalMemory($false)
             $after = [System.GC]::GetTotalMemory($true)
             write-log "running gc clean: $(get-date) before: $($before) after: $($after)" -report $global:scriptName | Out-Null
+            #Start-Sleep -Seconds 1
         }
 
         if ($scriptRecurrenceMinutes) {
@@ -120,10 +121,22 @@ function main() {
     }
 }
 
+function get-scriptArgs([string]$script){
+    $argIndex = $script.LastIndexOf('.ps1') + 4
+    $scriptArgs = $script.substring($argIndex).trim()
+    return $scriptArgs
+}
+
+function get-scriptFile([string]$script){
+    $argIndex = $script.LastIndexOf('.ps1') + 4
+    $scriptFile = $script.substring(0, $argIndex)
+    return $scriptFile
+}
+
 function get-wmiProcessInfo([bool]$reset = $false) {
     # not all os / ps support get-process parent.id so use wmi parentprocessid
 
-    if($reset){
+    if ($reset) {
         $global:ProcessInfo = $null
     }
     
@@ -135,21 +148,70 @@ function get-wmiProcessInfo([bool]$reset = $false) {
             $global:ProcessInfo = (get-wmiobject -Class Win32_Process -Namespace root\cimv2)
         }
     }
-    
-    $filteredResults = $global:ProcessInfo | where-object { ($_.parentProcessId -eq $pid) -or ($_.processId -eq $pid) }
-    $results = $filteredResults | select CommandLine, CreationDate, Handle, WS, ProcessId, UserModeTime, KernelModeTime| out-string
 
-    return $results
+    $processResults = $global:ProcessInfo | where-object { ($_.parentProcessId -eq $pid) -or ($_.processId -eq $pid) }
+    $filteredResults = $processResults | select-object CommandLine, CreationDate, Handle, WS, ProcessId, UserModeTime, KernelModeTime | out-string
+    return $filteredResults
 }
 
 function is-overLimit() {
-    if ((get-process -id $pid | select WS).WS -gt ($recycleLimitMB * 1000000)) {
-        write-log "error: memory over working set" -report $global:scriptName | out-null
+    $workingSet = (get-process -id $pid | select-object WS).WS
+    if ($workingSet -gt ($recycleLimitMB * 1024 * 1024)) {
+        write-log "error: memory over working set $workingSet" -report $global:scriptName | out-null
         return $true
     }
 
     return $false
 }
+
+function monitor-jobs() {
+    write-log "monitoring jobs: $(get-date) 
+        gc:$([System.GC]::GetTotalMemory($false)) 
+        ws: $((get-process -id $pid | select WS).WS|out-string) 
+        $(get-process -Id $pid | out-string)" -report $global:scriptName | out-null
+
+    $count = 0
+    while (@(get-job).Count -gt 0 -and !(is-overLimit)) {
+        if (++$count % 60 -eq 0) {
+            write-log -data (get-wmiProcessInfo $true) -report $global:scriptName | out-null
+            $count = 0
+        }
+
+        foreach ($job in get-job) {
+            $jobInfo = (receive-job -Id $job.id)
+            if ($jobInfo) {
+                write-log -data $jobInfo -report $job.name | out-null
+            }
+            else {
+                write-log -data $job -report $job.name | out-null
+            }
+
+            if ($job.state -ine "running") {
+                write-log -data $job | out-null
+
+                if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
+                    write-log -data $job -report $job.name | out-null
+                }
+                else {
+                    foreach ($script in [collections.arraylist]::new($global:scriptCommands)) {
+                        $scriptFileName = get-scriptFile $script
+                        if($scriptFileName -contains $job.Name){
+                            write-log "finished job: $script" -report $global:scriptName | out-null
+                            [void]$global:scriptCommands.Remove($script)
+                        }
+                    }
+                }
+                write-log -data $job -report $job.name | out-null
+                remove-job -Id $job.Id -Force  
+            }
+
+            start-sleep -Seconds $sleepSeconds
+        }
+    }
+
+    write-log "finished jobs: $scriptStartDateTimeUtc" -report $global:scriptName | out-null
+}
+
 function remove-jobs() {
     try {
         foreach ($job in get-job) {
@@ -206,10 +268,9 @@ function start-jobs() {
 
     foreach ($script in $global:scriptCommands) {
         write-log "executing script: $($script)" | out-null
-        $argIndex = $script.LastIndexOf('.ps1') + 4
-        $scriptFile = $script.substring(0, $argIndex)
-        $scriptArgs = $script.substring($argIndex).trim()
+        $scriptFile = get-scriptFile $script
         $scriptFileName = [io.path]::GetFileName($scriptFile)
+        $scriptArgs = get-scriptArgs $script
         write-log "checking file:$scriptFile`r`n`targs:$scriptArgs" | out-null
 
         if ($scriptFile.tolower().startswith("http")) {
@@ -234,48 +295,6 @@ function start-jobs() {
             invoke-expression -command "$scriptFile $scriptArgs"
         }
     }
-}
-
-function monitor-jobs() {
-    write-log "monitoring jobs: $(get-date) 
-        gc:$([System.GC]::GetTotalMemory($false)) 
-        ws: $((get-process -id $pid | select WS).WS|out-string) 
-        $(get-process -Id $pid | out-string)" -report $global:scriptName | out-null
-
-    $count = 0
-    while (@(get-job).Count -gt 0 -and !(is-overLimit)) {
-        # not working in ps 5.1
-
-        if(++$count % 60 -eq 0){
-            write-log -data (get-wmiProcessInfo $true) -report $global:scriptName | out-null
-            $count = 0
-        }
-
-        foreach ($job in get-job) {
-            $jobInfo = (receive-job -Id $job.id)
-            if ($jobInfo) {
-                write-log -data $jobInfo -report $job.name | out-null
-            }
-            else {
-                write-log -data $job -report $job.name | out-null
-            }
-
-            if ($job.state -ine "running") {
-                write-log -data $job | out-null
-
-                if ($job.state -imatch "fail" -or $job.statusmessage -imatch "fail") {
-                    write-log -data $job -report $job.name | out-null
-                }
-
-                write-log -data $job -report $job.name | out-null
-                remove-job -Id $job.Id -Force  
-            }
-
-            start-sleep -Seconds $sleepSeconds
-        }
-    }
-
-    write-log "finished jobs: $scriptStartDateTimeUtc" -report $global:scriptName | out-null
 }
 
 function write-log($data, $report) {
