@@ -359,7 +359,7 @@ function write-log($data, $report) {
 
     if ($global:sfClientAvailable) {
         try {
-            $datedLogFile = "$logDirectory\$($global:scriptName)-$((get-date).tostring('yyMMddhh')).log"
+            $datedLogFile = "$logDirectory\$($global:scriptName)-$((get-date).tostring('yyMMddHH')).log"
             out-file -append -InputObject ("$([DateTime]::Now.ToString())::$([Diagnostics.Process]::GetCurrentProcess().ID)::$($stringData)") -FilePath $datedLogFile
         }
         catch {
