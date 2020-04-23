@@ -6,6 +6,7 @@
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 5 -ne $null)[0],
     [bool]$continuous = ($env:continuous, $false -ne $null)[0],
+    [bool]$format = $true,
     [string]$outputFilePattern = ($env:outputFilePattern, "*sf_ps1_etw*.etl" -ne $null)[0],
     [string]$outputFileDestination = ($env:outputFileDestination, "..\log" -ne $null)[0],
     [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0],
@@ -49,6 +50,9 @@ function main() {
             # copy trace
             copy-files
 
+            # format files
+            format-files
+
             write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
             write-host "$(get-date) finished" -ForegroundColor green
         }
@@ -61,18 +65,6 @@ function main() {
     finally {
         if ($script:commandRunning) {
             stop-command
-        }
-    }
-}
-
-function copy-files($source = "$pwd\$outputFilePattern", $destination = $outputFileDestination) {
-    if ($destination) {
-        write-host "$(get-date) moving files $source to $destination"
-        if (!(test-path $destination) -and !(new-item -Path $destination -ItemType Directory)) {
-            write-error "$(get-date) unable to create directory $destination"
-        }
-        else {
-            move-item -path $source -destination $destination -Force
         }
     }
 }
@@ -95,19 +87,32 @@ function check-error() {
     }
 }
 
-function wait-command($minutes = $sleepMinutes) {
-    write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
-    write-host "$(get-date) sleeping $minutes minutes" -ForegroundColor green
-    start-sleep -Seconds ($minutes * 60)
-    write-host "$(get-date) resuming" -ForegroundColor green
-    $timer = get-date
+function copy-files($source = "$pwd\$outputFilePattern", $destination = $outputFileDestination) {
+    if ($destination) {
+        write-host "$(get-date) moving files $source to $destination"
+        if (!(test-path $destination) -and !(new-item -Path $destination -ItemType Directory)) {
+            write-error "$(get-date) unable to create directory $destination"
+        }
+        else {
+            move-item -path $source -destination $destination -Force
+        }
+    }
 }
 
-function stop-command() {
-    write-host "$(get-date) stopping existing trace`r`n" -ForegroundColor green
-    write-host "logman stop $sessionName -ets"
-    logman stop $sessionName -ets
-    $script:commandRunning = $false
+function format-files($filePattern = $outputFilePattern, $destination = $outputFileDestination) {
+    if ($format -and $destination) {
+        write-host "$(get-date) formatting files in $destination"
+        if (!(test-path $destination) -and !(new-item -Path $destination -ItemType Directory)) {
+            write-error "$(get-date) unable to create directory $destination"
+        }
+        else {
+            foreach($file in (Get-ChildItem -Filter $filePattern -Path $destination))
+            {
+                write-host "netsh trace convert $($file.FullName)"
+                netsh trace convert $file.FullName
+            }
+        }
+    }
 }
 
 function start-command() {
@@ -120,6 +125,21 @@ function start-command() {
         logman update trace $sessionName -p $etwProvider $keywords 0xff -ets
     }
     $script:commandRunning = $true
+}
+
+function stop-command() {
+    write-host "$(get-date) stopping existing trace`r`n" -ForegroundColor green
+    write-host "logman stop $sessionName -ets"
+    logman stop $sessionName -ets
+    $script:commandRunning = $false
+}
+
+function wait-command($minutes = $sleepMinutes) {
+    write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
+    write-host "$(get-date) sleeping $minutes minutes" -ForegroundColor green
+    start-sleep -Seconds ($minutes * 60)
+    write-host "$(get-date) resuming" -ForegroundColor green
+    $timer = get-date
 }
 
 main
