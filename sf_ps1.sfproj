@@ -25,6 +25,7 @@
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-docker-log.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-docker-monitor.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-etw-dns.ps1" />
+    <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-etw-hns.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-etw-wcmsvc.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-net-trace.ps1" />
     <None Include="ApplicationPackageRoot\sf_ps1Pkg\Code\sf-netsh-show-http.ps1">
