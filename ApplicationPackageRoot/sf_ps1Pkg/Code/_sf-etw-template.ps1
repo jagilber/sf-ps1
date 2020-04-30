@@ -9,10 +9,11 @@ param(
     [bool]$format = $true,
     [string]$outputFilePattern = ($env:outputFilePattern, "*sf_ps1_etw*.etl" -ne $null)[0],
     [string]$outputFileDestination = ($env:outputFileDestination, "..\log" -ne $null)[0],
-    [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0],
-    [string]$sessionName = "sf_ps1_etw_Session",
+    [int]$maxSizeMb = ($env:maxSize, 64 -ne $null)[0],
+    [string]$sessionName = "sf_ps1_etw_session",
     [string]$outputFile = ".\sf_ps1_etw.etl",
-    [string]$mode = 'Circular',
+    [ValidateSet('none', 'sequential', 'circular','append', 'newfile')]
+    [string]$mode = 'circular',
     [int]$buffSize = 1024,
     [int]$numBuffers = 16,
     [string]$keywords = '0xffffffffffffffff',
@@ -117,8 +118,9 @@ function format-files($filePattern = $outputFilePattern, $destination = $outputF
 
 function start-command() {
     write-host "$(get-date) starting trace" -ForegroundColor green
-    write-host "logman create trace $sessionName -ow -o $outputFile -nb $numBuffers $numBuffers -bs $buffSize -mode $mode -f bincirc -max $maxSizeMb -ets"
-    logman create trace $sessionName -ow -o $outputFile -nb $numBuffers $numBuffers -bs $buffSize -mode $mode -f bincirc -max $maxSizeMb -ets
+    $loggingMode = set-loggingMode($mode)
+    write-host "logman create trace $sessionName -ow -o $outputFile -nb $numBuffers $numBuffers -bs $buffSize -mode $loggingMode -f bincirc -max $maxSizeMb -ets"
+    logman create trace $sessionName -ow -o $outputFile -nb $numBuffers $numBuffers -bs $buffSize -mode $loggingMode -f bincirc -max $maxSizeMb -ets
             
     foreach ($etwProvider in $etwProviders) {
         write-host "logman update trace $sessionName -p $etwProvider $keywords 0xff -ets"
@@ -140,6 +142,17 @@ function wait-command($minutes = $sleepMinutes) {
     start-sleep -Seconds ($minutes * 60)
     write-host "$(get-date) resuming" -ForegroundColor green
     $timer = get-date
+}
+
+function set-loggingMode([string]$mode) {
+    switch($mode){
+        "none"{return 0x0}
+        "sequential"{return 0x1}
+        "circular"{return 0x2}
+        "append" {return 0x4}
+        "newfile" {return 0x8}
+        default: {return 0x0}
+    }
 }
 
 main
