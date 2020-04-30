@@ -16,7 +16,7 @@ param(
 $PSModuleAutoLoadingPreference = 2
 $error.Clear()
 $errorActionPreference = "continue"
-$global:scriptCommands = @($scripts.Split(';'))
+$global:scriptCommands = [collections.arraylist]@($scripts.Split(';'))
 $global:nodes = @($runOnNodes.Split(','))
 $nodeName = $env:Fabric_NodeName
 $source = $env:Fabric_ServiceName
@@ -195,7 +195,7 @@ function monitor-jobs() {
                 else {
                     foreach ($script in [collections.arraylist]::new($global:scriptCommands)) {
                         $scriptFileName = get-scriptFile $script
-                        if($scriptFileName -contains $job.Name){
+                        if($scriptFileName.Contains($job.Name)){
                             write-log "finished job: $script" -report $global:scriptName | out-null
                             [void]$global:scriptCommands.Remove($script)
                         }
