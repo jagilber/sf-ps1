@@ -10,9 +10,10 @@ param(
     [string]$outputFilePattern = ($env:outputFilePattern, "*sf_ps1_etw*.etl" -ne $null)[0],
     [string]$outputFileDestination = ($env:outputFileDestination, "..\log" -ne $null)[0],
     [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0],
-    [string]$sessionName = "sf_ps1_etw_Session",
+    [string]$sessionName = "sf_ps1_etw_dns",
     [string]$outputFile = ".\sf_ps1_etw_dns.etl",
-    [string]$mode = 'Circular',
+    [ValidateSet('none', 'sequential', 'circular','append', 'newfile')]
+    [string]$mode = 'circular',
     [int]$buffSize = 1024,
     [int]$numBuffers = 16,
     [string]$keywords = '0xffffffffffffffff',
@@ -140,6 +141,17 @@ function wait-command($minutes = $sleepMinutes) {
     start-sleep -Seconds ($minutes * 60)
     write-host "$(get-date) resuming" -ForegroundColor green
     $timer = get-date
+}
+
+function set-loggingMode([string]$mode) {
+    switch($mode){
+        "none"{return 0x0}
+        "sequential"{return 0x1}
+        "circular"{return 0x2}
+        "append" {return 0x4}
+        "newfile" {return 0x8}
+        default {return 0x0}
+    }
 }
 
 main
