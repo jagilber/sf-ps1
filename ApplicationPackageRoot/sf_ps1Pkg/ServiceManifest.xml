@@ -42,6 +42,7 @@
       <EnvironmentVariable Name="codeVersion" Value="" />
       <EnvironmentVariable Name="detail" Value="false" />
       <EnvironmentVariable Name="sleepSeconds" Value="" />
+      <EnvironmentVariable Name="sleepMinutes" Value="" />
       <EnvironmentVariable Name="scriptStartDateTimeUtc" Value="" />
       <EnvironmentVariable Name="scriptRecurrenceMinutes" Value="" />
       <EnvironmentVariable Name="runOnNodes" Value="" />

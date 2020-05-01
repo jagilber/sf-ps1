@@ -2,7 +2,7 @@
 [cmdletbinding()]
 param(
     [string]$scripts = $env:scripts,
-    [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0], # todo fix. 
+    [int]$sleepSeconds = ($env:sleepSeconds, 1 -ne $null)[0], 
     [string]$detail = $env:detail,
     [string]$runOnNodes = $env:runOnNodes,
     [int]$reportTimeToLiveMinutes = ($env:reportTimeToLiveMinutes, 60 -ne $null)[0],
@@ -38,6 +38,8 @@ function main() {
         $global:scriptName = [io.path]::getFileName($MyInvocation.ScriptName)
 
         write-log "starting $global:ScriptName $global:scriptParams" -report $global:scriptName | out-null
+        write-log "env: $(Get-ChildItem env: | out-string)"
+        write-log "variables: $(Get-Variable | out-string)"
 
         if (!$nodeName) { $nodeName = set-nodeName }
         if (!$source) { $source = [io.path]::GetFileName($MyInvocation.ScriptName) }

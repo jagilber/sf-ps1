@@ -1,5 +1,5 @@
 ###########################
-# sf-ps1 etw template script
+# sf-ps1 etw script
 # 
 ###########################
 [cmdletbinding()]
@@ -7,18 +7,19 @@ param(
     [int]$sleepMinutes = ($env:sleepMinutes, 5 -ne $null)[0],
     [bool]$continuous = ($env:continuous, $false -ne $null)[0],
     [bool]$format = $true,
-    [string]$outputFilePattern = ($env:outputFilePattern, "*sf_ps1_etw*.etl" -ne $null)[0],
+    [string]$outputFilePattern = ($env:outputFilePattern, "*sf_ps1_*.etl" -ne $null)[0],
     [string]$outputFileDestination = ($env:outputFileDestination, "..\log" -ne $null)[0],
     [int]$maxSizeMb = ($env:maxSize, 64 -ne $null)[0],
     [string]$sessionName = "sf_ps1_etw_session",
     [string]$outputFile = ".\sf_ps1_etw.etl",
-    [ValidateSet('none', 'sequential', 'circular','append', 'newfile')]
+    [ValidateSet('circular','newfile')]
     [string]$mode = 'circular',
     [int]$buffSize = 1024,
     [int]$numBuffers = 16,
     [string]$keywords = '0xffffffffffffffff',
     [string[]]$etwProviders = @(
-        'Microsoft-Windows-DNS-Client'
+        'Microsoft-Windows-DNS-Client' #,
+        #'{E13C0D23-CCBC-4E12-931B-D9CC2EEE27E4}' # test .net guid . do not use
     )
 )
 
@@ -29,25 +30,30 @@ $script:commandRunning = $false
 
 function main() {
     try {
+        set-location $psscriptroot
+        $error.clear()
+        $timer = get-date
+        write-host "$($MyInvocation.ScriptName)`r`n$psboundparameters`r`n"
+        if (!(check-admin)) { return }
+
+        # remove existing trace
+        stop-command
+
+        # start new trace
+        start-command
+        check-error
+
         do {
-            set-location $psscriptroot
-            $error.clear()
-            $timer = get-date
-            write-host "$($MyInvocation.ScriptName)`r`n$psboundparameters`r`n"
-            if (!(check-admin)) { return }
 
-            # remove existing trace
-            stop-command
-
-            # start new trace
-            start-command
-            check-error
+            # wait
             wait-command
 
-            # stop new trace
-            stop-command
-            check-error
-
+            if ($mode -ieq 'circular') {
+                # stop new trace
+                stop-command
+                check-error
+            }
+            
             # copy trace
             copy-files
 
@@ -55,9 +61,9 @@ function main() {
             format-files
 
             write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
-            write-host "$(get-date) finished" -ForegroundColor green
         }
         while ($continuous) 
+        write-host "$(get-date) finished" -ForegroundColor green
     }
     catch {
         write-error "exception:$(get-date) $($_ | out-string)"
@@ -89,13 +95,22 @@ function check-error() {
 }
 
 function copy-files($source = "$pwd\$outputFilePattern", $destination = $outputFileDestination) {
-    if ($destination) {
-        write-host "$(get-date) moving files $source to $destination"
-        if (!(test-path $destination) -and !(new-item -Path $destination -ItemType Directory)) {
-            write-error "$(get-date) unable to create directory $destination"
+    if (!(test-path $destination) -and !(new-item -Path $destination -ItemType Directory)) {
+        write-error "$(get-date) unable to create directory $destination"
+        return
+    }
+
+    write-host "$(get-date) moving files $source to $destination"
+
+    foreach ($sourceFile in (Get-ChildItem -Path $source)) {
+        $destinationFile = "$destination\$([io.path]::GetFileNameWithoutExtension($sourceFile))$([io.fileinfo]::new($sourceFile).LastWriteTime.ToString('yyMMddHHmmss')).etl"
+        
+        if (!(test-path $destinationFile) -and !(is-fileLocked $sourceFile)) {
+            write-host "$(get-date) moving file $sourceFile to $destination"
+            move-item -path $sourceFile -destination $destinationFile
         }
         else {
-            move-item -path $source -destination $destination -Force
+            write-host "not moving existing destination file: $destinationFile"
         }
     }
 }
@@ -107,25 +122,59 @@ function format-files($filePattern = $outputFilePattern, $destination = $outputF
             write-error "$(get-date) unable to create directory $destination"
         }
         else {
-            foreach($file in (Get-ChildItem -recurse -Filter $filePattern -Path $destination))
-            {
+            foreach ($file in (Get-ChildItem -recurse -Filter $filePattern -Path $destination)) {
+                if(!(test-path ($file.FullName.Replace(".etl",".txt")))){
                 write-host "netsh trace convert $($file.FullName)"
-                netsh trace convert $file.FullName
+                    netsh trace convert $file.FullName
+                }
+                else {
+                    write-host "not converting existing destination file: $file"
+                }
             }
         }
     }
 }
 
+function is-fileLocked([string] $file) {
+    $fileInfo = New-Object System.IO.FileInfo $file
+ 
+    if ((Test-Path -Path $file) -eq $false) {
+        write-host "File does not exist:$($file)"
+        return $false
+    }
+  
+    try {
+        $fileStream = $fileInfo.Open([System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+        if ($fileStream) {
+            $fileStream.Close()
+        }
+ 
+        write-host "File is NOT locked:$($file)"
+        return $false
+    }
+    catch {
+        # file is locked by a process.
+        write-host "File is locked:$($file)"
+        return $true
+    }
+}
+
 function start-command() {
     write-host "$(get-date) starting trace" -ForegroundColor green
-    $loggingMode = set-loggingMode($mode)
-    write-host "logman create trace $sessionName -ow -o $outputFile -nb $numBuffers $numBuffers -bs $buffSize -mode $loggingMode -f bincirc -max $maxSizeMb -ets"
-    logman create trace $sessionName -ow -o $outputFile -nb $numBuffers $numBuffers -bs $buffSize -mode $loggingMode -f bincirc -max $maxSizeMb -ets
+
+    if($mode -ieq 'newfile'){
+        $outputFile = "$([io.path]::GetFileNameWithoutExtension($outputFile))%d.etl"
+    }
+    write-host "logman create trace $sessionName -ow -o $outputFile -nb $numBuffers $numBuffers -bs $buffSize -mode $mode -max $maxSizeMb -ets"
+    logman create trace $sessionName -ow -o $outputFile -nb $numBuffers $numBuffers -bs $buffSize -mode $mode -max $maxSizeMb -ets
             
     foreach ($etwProvider in $etwProviders) {
         write-host "logman update trace $sessionName -p $etwProvider $keywords 0xff -ets"
         logman update trace $sessionName -p $etwProvider $keywords 0xff -ets
     }
+
+    logman start $sessionName -ets
+    logman $sessionName -ets
     $script:commandRunning = $true
 }
 
@@ -142,17 +191,6 @@ function wait-command($minutes = $sleepMinutes) {
     start-sleep -Seconds ($minutes * 60)
     write-host "$(get-date) resuming" -ForegroundColor green
     $timer = get-date
-}
-
-function set-loggingMode([string]$mode) {
-    switch($mode){
-        "none"{return 0x0}
-        "sequential"{return 0x1}
-        "circular"{return 0x2}
-        "append" {return 0x4}
-        "newfile" {return 0x8}
-        default: {return 0x0}
-    }
 }
 
 main
