@@ -1,13 +1,13 @@
 ###########################
-# sf-ps1 netsh network trace
+# sf-ps1 etl trace
 # 
 ###########################
 <#
 .SYNOPSIS 
-service fabric hns etl tracing script
+service fabric etl tracing script
 
 .DESCRIPTION
-script will create a permanent ETL tracing session across reboots using powershell Autologger cmdlets.
+script will create a dynamic ETL tracing using powershell ETW session cmdlets.
 default destination ($traceFilePath) is configured location used by FabricDCA for log staging.
 files saved in D:\SvcFab\Log\CrashDumps\ will by uploaded by FabricDCA to 'sflogs' storage account fabriccrashdumps-{{cluster id}} container.
 after upload, local files will be deleted by FabricDCA automatically.
@@ -28,12 +28,13 @@ invoke-webRequest "https://raw.githubusercontent.com/jagilber/powershellScripts/
 param(
     [int]$sleepMinutes = ($env:sleepMinutes, 1 -ne $null)[0],
     [bool]$continuous = ($env:continuous, $false -ne $null)[0],
-    [string]$outputFile = ($env:outputFile, "$pwd\$env:computername-net.$((get-date).tostring("MMddhhmmss")).etl" -ne $null)[0],
-    [string]$outputFilePattern = ($env:outputFilePattern, "*net.*.etl" -ne $null)[0],
-    [string]$outputFileDestination = ($env:outputFileDestination, "..\log" -ne $null)[0],
     [int]$maxSizeMb = ($env:maxSize, 1024 -ne $null)[0],
     [string[]]$traceGuids = ($env:traceGuids, @(
-            '{2F07E2EE-15DB-40F1-90EF-9D7BA282188A}' # Microsoft-Windows-TCPIP
+        '{2F07E2EE-15DB-40F1-90EF-9D7BA282188A}', # Microsoft-Windows-TCPIP
+        '{1C95126E-7EEA-49A9-A3FE-A378B03DDB4D}', # Microsoft-Windows-DNS-Client
+        '{B1945E15-4933-460F-8103-AA611DDB663A}', # HttpSysProvider
+        '{DD5EF90A-6398-47A4-AD34-4DCECDEF795F}', # HTTP Service Trace
+        '{7B6BC78C-898B-4170-BBF8-1A469EA43FC5}' # HttpEvent
         ) -ne $null)[0],
     [string]$traceName = 'sf-etl',
     # new file https://docs.microsoft.com/windows/win32/etw/logging-mode-constants
@@ -82,9 +83,6 @@ function main() {
             stop-command
             check-error
 
-            # copy trace
-            copy-files
-
             write-host "$(get-date) timer: $(((get-date) - $timer).tostring())"
             write-host "$(get-date) finished" -ForegroundColor green
         }
@@ -115,26 +113,6 @@ function check-error() {
         return $true
     }
     return $false
-}
-
-function copy-files($source = $outputFilePattern, $destination = $outputFileDestination) {
-    if ($destination) {
-        write-host "$(get-date) moving files $source to $destination"
-        if (!(test-path $destination) -and !(new-item -Path $destination -ItemType Directory)) {
-            write-error "$(get-date) unable to create directory $destination"
-        }
-        else {
-            foreach ($item in get-item -path $source) {
-                $error.Clear()
-                write-host "$(get-date) compress-archive -Path $item -DestinationPath $destination\$([io.path]::GetFileNameWithoutExtension($item)).zip"
-                compress-archive -Path $item -DestinationPath "$destination\$([io.path]::GetFileNameWithoutExtension($item)).zip" -Force
-                if (!$error) {
-                    write-host "$(get-date) removing $item"
-                    remove-item $item -Force -Recurse
-                }
-            }
-        }
-    }
 }
 
 function stop-command() {
