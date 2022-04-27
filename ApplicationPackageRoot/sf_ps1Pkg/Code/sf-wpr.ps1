@@ -18,7 +18,7 @@ write-host "$($psboundparameters | fl * | out-string)`r`n" -ForegroundColor gree
 function main() {
     try{
         do {
-            #set-location $psscriptroot
+            set-location $psscriptroot
             $error.clear()
             $timer = get-date
             write-host "$($MyInvocation.ScriptName)`r`n$psboundparameters`r`n"

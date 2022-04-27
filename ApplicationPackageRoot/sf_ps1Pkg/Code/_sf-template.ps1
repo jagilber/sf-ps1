@@ -14,7 +14,7 @@ $error.clear()
 function main() {
     try {
         do {
-            #set-location $psscriptroot
+            set-location $psscriptroot
             $timer = get-date
             write-host "$(get-date) $($MyInvocation.ScriptName)`r`n" -ForegroundColor green
 
