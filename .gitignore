@@ -255,3 +255,4 @@ ModelManifest.xml
 **/Configuration
 .vscode
 PublishProfiles/Cloud.xml
+ApplicationParameters/Cloud.xml
