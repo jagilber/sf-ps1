@@ -23,6 +23,7 @@
     <Parameter Name="sf_ps1_setupScripts" DefaultValue="" />
     <Parameter Name="sf_ps1_sleepSeconds" DefaultValue="1" />
     <Parameter Name="sf_ps1_sleepMinutes" DefaultValue="1" />
+    <Parameter Name="sf_ps1_managedIdentity" DefaultValue="AppAdmin" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion
        should match the Name and Version attributes of the ServiceManifest element defined in the
@@ -48,9 +49,11 @@
       <EnvironmentVariable Name="setupScripts" Value="[sf_ps1_setupScripts]" />
       <EnvironmentVariable Name="sleepSeconds" Value="[sf_ps1_sleepSeconds]" />
       <EnvironmentVariable Name="sleepMinutes" Value="[sf_ps1_sleepMinutes]" />
+      <EnvironmentVariable Name="managedIdentity" Value="[sf_ps1_managedIdentity]" />
     </EnvironmentOverrides>
     <Policies>
       <RunAsPolicy CodePackageRef="Code" UserRef="SetupLocalSystem" EntryPointType="Main" />
+       <IdentityBindingPolicy ServiceIdentityRef="WebAdmin" ApplicationIdentityRef="[sf_ps1_managedIdentity]" />
     </Policies>
   </ServiceManifestImport>
   <DefaultServices>
@@ -81,6 +84,9 @@
         </MemberOf>-->
       <!--</User>-->
     </Users>
+  <ManagedIdentities>
+      <ManagedIdentity Name="[sf_ps1_managedIdentity]" />
+    </ManagedIdentities>
   </Principals>
   <Diagnostics>
     <FolderSource
