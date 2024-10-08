@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "applicationName": {
+            "value": "sf_ps1"
+        },
+        "applicationTypeName": {
+            "value": "sf_ps1Type"
+        },
+        "applicationTypeVersion": {
+            "value": "1.0.0"
+        },
+        "appPackageUrl": {
+            "value": "https://raw.githubusercontent.com/jagilber/sf-ps1/master/sfpackages/Sf-ps1.1.0.0.sfpkg"
+        },
+        "serviceName": {
+            "value": "sf_ps1~sf_ps1"
+        },
+        "serviceTypeName": {
+            "value": "sf_ps1Type"
+        },
+        "userAssignedIdentityName": {
+            "value": "AppAdmin"
+        }
+    }
+}

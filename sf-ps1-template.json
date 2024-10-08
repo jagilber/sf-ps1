@@ -1,0 +1,173 @@
+// 20210228175136
+// https://raw.githubusercontent.com/Azure-Samples/service-fabric-dotnet-quickstart/master/ARM/UserApp.json
+
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "applicationName": {
+            "type": "string",
+            "defaultValue": "Application1",
+            "metadata": {
+                "description": "The name of the application resource."
+            }
+        },
+        "applicationTypeName": {
+            "type": "string",
+            "defaultValue": "ApplicationType",
+            "metadata": {
+                "description": "The application type name."
+            }
+        },
+        "applicationTypeVersion": {
+            "type": "string",
+            "defaultValue": "1",
+            "metadata": {
+                "description": "The application type version."
+            }
+        },
+        "appPackageUrl": {
+            "type": "string",
+            "metadata": {
+                "description": "The URL to the application package sfpkg file."
+            }
+        },
+        "forceRestart": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Indicates whether to force restart the service."
+            }
+        },
+        "clusterName": {
+            "type": "string",
+            "defaultValue": "[resourcegroup().name]",
+            "metadata": {
+                "description": "Name of your cluster - Between 3 and 23 characters. Letters and numbers only."
+            }
+        },
+        "serviceName": {
+            "type": "string",
+            "defaultValue": "Service1",
+            "metadata": {
+                "description": "The name of the service resource in the format of {applicationName}~{serviceName}."
+            }
+        },
+        "serviceTypeName": {
+            "type": "string",
+            "defaultValue": "Service1Type",
+            "metadata": {
+                "description": "The name of the service type."
+            }
+        },
+        "userAssignedIdentityName": {
+            "type": "string",
+            "defaultValue": "[resourcegroup().name]",
+            "metadata": {
+                "description": "The name of the service type."
+            }
+        }
+    },
+    "variables": {
+        "clusterLocation": "[resourcegroup().location]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2020-03-01",
+            "type": "Microsoft.ServiceFabric/clusters/applicationTypes",
+            "name": "[concat(parameters('clusterName'), '/', parameters('applicationTypeName'))]",
+            "location": "[variables('clusterLocation')]",
+            "dependsOn": [
+            ],
+            "properties": {
+                "provisioningState": "Default"
+            }
+        },
+        {
+            "apiVersion": "2020-03-01",
+            "type": "Microsoft.ServiceFabric/clusters/applicationTypes/versions",
+            "name": "[concat(parameters('clusterName'), '/', parameters('applicationTypeName'), '/', parameters('applicationTypeVersion'))]",
+            "location": "[variables('clusterLocation')]",
+            "dependsOn": [
+                "[concat('Microsoft.ServiceFabric/clusters/', parameters('clusterName'), '/applicationTypes/', parameters('applicationTypeName'))]"
+            ],
+            "properties": {
+                "provisioningState": "Default",
+                "appPackageUrl": "[parameters('appPackageUrl')]"
+            }
+        },
+        {
+            "apiVersion": "2020-03-01",
+            "type": "Microsoft.ServiceFabric/clusters/applications",
+            "name": "[concat(parameters('clusterName'), '/', parameters('applicationName'))]",
+            "location": "[variables('clusterLocation')]",
+            "identity": {
+                "type": "userAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities/', parameters('userAssignedIdentityName'))]": {}
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.ServiceFabric/clusters/', parameters('clusterName'), '/applicationTypes/', parameters('applicationTypeName'), '/versions/', parameters('applicationTypeVersion'))]"
+            ],
+            "properties": {
+                "managedIdentities": [
+                    {
+                        "name": "[parameters('userAssignedIdentityName')]",
+                        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities/', parameters('userAssignedIdentityName')), '2018-11-30').principalId]"
+                    }
+                ],
+                "provisioningState": "Default",
+                "typeName": "[parameters('applicationTypeName')]",
+                "typeVersion": "[parameters('applicationTypeVersion')]",
+                "parameters": {
+                },
+                "upgradePolicy": {
+                    "upgradeReplicaSetCheckTimeout": "01:00:00.0",
+                    "forceRestart": "[parameters('forceRestart')]",
+                    "rollingUpgradeMonitoringPolicy": {
+                        "healthCheckWaitDuration": "00:02:00.0",
+                        "healthCheckStableDuration": "00:05:00.0",
+                        "healthCheckRetryTimeout": "00:10:00.0",
+                        "upgradeTimeout": "01:00:00.0",
+                        "upgradeDomainTimeout": "00:20:00.0"
+                    },
+                    "applicationHealthPolicy": {
+                        "considerWarningAsError": "false",
+                        "maxPercentUnhealthyDeployedApplications": "50",
+                        "defaultServiceTypeHealthPolicy": {
+                            "maxPercentUnhealthyServices": "50",
+                            "maxPercentUnhealthyPartitionsPerService": "50",
+                            "maxPercentUnhealthyReplicasPerPartition": "50"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "apiVersion": "2020-03-01",
+            "type": "Microsoft.ServiceFabric/clusters/applications/services",
+            "name": "[concat(parameters('clusterName'), '/', parameters('applicationName'), '/', parameters('serviceName'))]",
+            "location": "[variables('clusterLocation')]",
+            "dependsOn": [
+                "[concat('Microsoft.ServiceFabric/clusters/', parameters('clusterName'), '/applications/', parameters('applicationName'))]"
+            ],
+            "properties": {
+                "provisioningState": "Default",
+                "serviceKind": "Stateless",
+                "serviceTypeName": "[parameters('serviceTypeName')]",
+                "instanceCount": "-1",
+                "partitionDescription": {
+                    "partitionScheme": "Singleton"
+                },
+                "serviceLoadMetrics": [
+
+                ],
+                "servicePlacementPolicies": [
+
+                ],
+                "defaultMoveCost": ""
+            }
+        }
+    ]
+}
